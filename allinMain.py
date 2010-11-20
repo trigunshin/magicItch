@@ -6,38 +6,60 @@ from BeautifulSoup import BeautifulSoup
 import re
 import urllib2
 
-class Weblogic:
+class CardInfo:
+        def __init__(self, set, name, price):
+            self.set = set
+            self.name = name
+            self.price = price
+            
+        def getString(self):
+            return "\""+str(self.set) + ", \"" + str(self.name) + "\", \"" + str(self.price)+"\""
+
+class SCGSpoilerParser:
     """
-    Methods here interface directly with the code on the website and return
-    results which can be used by systems of higher intelligence.
     """
 
     def __init__(self):
-        self.requestQueue = Queue.Queue()
-        self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
-        self.lastFetchedURL = None
-        f = open("login.ogame")
-        info = f.read()
-        self.user = re.search("user:\s(.*?);", info, re.M).group(1)
-        self.passwd = re.search("password:\s(.*?);", info, re.M).group(1)
-        self.server = re.search("server:\s(.*?);", info, re.M).group(1)
-        self.SESSION_REGEX = re.compile(r"[0-9A-Fa-f]{12}")
-        self.PLAYER_REGEX = re.compile("id=\"playerName\".*?efy\"\>(.*?)\<", re.S|re.M)
-        self.session = None
-
-        headers = [('Keep-Alive', "300")]
-        self.opener.addheaders = headers
-
-    def delayTime(self, lowerBound=2, upperBound=4):
-        delay = random.randint(lowerBound, upperBound)
-        print "Sleeping " + str(delay) + " seconds after request..."
-        time.sleep(delay)
-        return delay
-
-
-if __name__ == '__main__':
-    scarsURL = "/Users/trigunshin/magicItch/test/scars_1.html"#"http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
+        self.scarsURL = "/Users/trigunshin/magicItch/test/scars_1.html"#"http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
+        #unreadMessageREGEX = re.compile("(?:<tr class=\"entry trigger new\" id=\"\w+\">.+?href=\"(index.php\?.+?)\">)+", re.DOTALL)
+        self.cardNameRegex = re.compile("\">(.+)", re.DOTALL)
+        self.cardSetRegex = re.compile("(.+) Singles", re.DOTALL)
+        self.nameIndex = 0
+        self.setIndex = 1
+        self.priceIndex = 8
     
+    def getCardInfo(self, aTDSoup):
+        name = self.getName(aTDSoup)
+        price = self.getPrice(aTDSoup)
+        set = self.getSet(aTDSoup)
+        
+        return CardInfo(set, name, price)
+        
+    def getName(self, aTDSoup):
+        if len(aTDSoup) > 9:
+            nameTD = aTDSoup[self.nameIndex]
+            anchors = nameTD.findAll("a")
+            for anchor in anchors:
+                matches = self.cardNameRegex.findall(anchor.text)
+                if len(matches) > 0:
+                    return matches.pop().strip()
+                
+    def getSet(self, aTDSoup):
+        if len(aTDSoup) > 9:
+            setTD = aTDSoup[self.setIndex]
+            anchors = setTD.findAll("a")
+            for anchor in anchors:
+                matches = self.cardSetRegex.findall(anchor.text)
+                if len(matches) > 0:
+                    return matches.pop().strip()
+                    
+    def getPrice(self, aTDSoup):
+        if len(aTDSoup) > 9:
+            priceTD = aTDSoup[self.priceIndex]
+            return priceTD.text
+        
+if __name__ == '__main__':
+    scg = SCGSpoilerParser()
     # download the page
     
     #user_agent = 'Mozilla/5 (Solaris 10) Gecko'
@@ -46,7 +68,7 @@ if __name__ == '__main__':
     #response = urllib2.urlopen(scarsURL)
     #html = response.read()
     html = ""
-    file = open(scarsURL)
+    file = open(scg.scarsURL)
     
     while 1:
         line = file.readline()
@@ -57,36 +79,18 @@ if __name__ == '__main__':
     
     # create a beautiful soup object
     soup = BeautifulSoup(html)
-    
     print "Souping!"
-    #unreadMessageREGEX = re.compile("(?:<tr class=\"entry trigger new\" id=\"\w+\">.+?href=\"(index.php\?.+?)\">)+", re.DOTALL)
-    cardNameRegex = re.compile(">(.+)</a>", re.DOTALL)
     
-    # all links to detailed boat information have class lfloat
+    soup.findAll()
     trs = soup.findAll("tr", { "class":None})
     for tr in trs:
         #print tr
         tds = tr.findAll("td")
-        count = 0;
-        for td in tds:
-            if count == 0:
-                anchors = td.findAll("a")
-                for anchor in anchors:
-                    print "ANCHOR STRING"
-                    #name = cardNameRegex.findall(anchor.string)
-                    #if name != None:
-                    #    print name
-                    #else:
-                    #    print anchor
-                    print anchor.contents[0]
-                    print anchor
-            elif count == 1:
-                a=1
-            elif count == 8:
-                a=1
-            count = count+1
-            break;
-    
+        info = scg.getCardInfo(tds)
+        
+        if info.set != None:
+            print info.getString()
+        
     """
     # all links to detailed boat information have class lfloat
     links = soup.findAll("a", { "class" : "lfloat" })
