@@ -15,6 +15,22 @@ class CardInfo:
         def getString(self):
             return "\""+str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price)+"\""
 
+class HtmlReader:
+    def __init__(self, url):
+        self.url = url
+
+    def readHtml(self):
+        file = urllib2.urlopen(self.url)
+        return file.read();
+
+class SCGSetHashBuilder:
+    def __init__(self):
+        self.scgUrl = "http://sales.starcitygames.com/spoiler/spoiler.php"
+
+    def build(self):
+        self.html = HtmlReader(self.scgUrl).readHtml() 
+        soup = BeautifulSoup(self.html);
+
 class SCGSpoilerParser:
     """
     """
