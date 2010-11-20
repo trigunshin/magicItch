@@ -1,4 +1,5 @@
 """
+http://sales.starcitygames.com/spoiler/spoiler.php
 http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results
 """
 
@@ -20,25 +21,56 @@ class SCGSpoilerParser:
     """
 
     def __init__(self):
-        self.scarsURL = "test/scars_1.html"#"http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
-        #unreadMessageREGEX = re.compile("(?:<tr class=\"entry trigger new\" id=\"\w+\">.+?href=\"(index.php\?.+?)\">)+", re.DOTALL)
+        #self.scarsURL = "test/scars_1.html"#"http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
+        self.scarsURL = "http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
         self.cardNameRegex = re.compile("\">(.+)", re.DOTALL)
         self.cardSetRegex = re.compile("(.+) Singles", re.DOTALL)
-        
+        #next link info
+        self.nextLinkText = "Next"
         #indeces for card row info
         self.nameIndex = 0
         self.setIndex = 1
         self.priceIndex = 8
-        
         #which TR contains the pagination links
         self.linkIndex = 1
+
+    def parseSetPageResults(self, aSetURL):
+        # download the page
+        user_agent = 'Mozilla/5 (Solaris 10) Gecko'
+        headers = { 'User-Agent' : user_agent }
+        response = urllib2.urlopen(aSetURL)
+        html = response.read()
+        return self.getSetInfo(html)
+
+    def getSetInfo(self, aPageSource):
+        infoList = []
+        soup = BeautifulSoup(aPageSource)
+        trs = soup.findAll("tr", {"class":None})
+        for tr in trs:
+            tds = tr.findAll("td")
+            info = scg.getCardInfo(tds)
+            if info.set != None:
+                infoList.append(info)
+        nextPageURL = self.getNextPage(trs)
+        if nextPageURL != None:
+            infoList += self.parseSetPageResults(nextPageURL)
+        return infoList
+
+    def getNextPage(self, aTRSoup):
+        link = None
+        if len(aTRSoup) > 0:
+            anchors = aTRSoup[self.linkIndex].findAll("a")
+            for anchor in anchors:
+                if anchor.text.find(self.nextLinkText) >= 0:
+                    link = anchor["href"]
+        return link
 
     def getPageLinks(self, aTRSoup):
         linkList = []
         anchors = aTRSoup[self.linkIndex].findAll("a")
         for anchor in anchors:
             if anchor.text.startswith("["):
-                pageLink = anchor["href"]
+                pageLink = anchor['href']
                 linkList.append(pageLink)
         return linkList
     
@@ -81,6 +113,7 @@ if __name__ == '__main__':
     #
     #response = urllib2.urlopen(scarsURL)
     #html = response.read()
+    """
     html = ""
     file = open(scg.scarsURL)
     
@@ -90,15 +123,18 @@ if __name__ == '__main__':
             break
         html+= line
     file.close()
-    
+"""    
+    infoList = scg.parseSetPageResults(scg.scarsURL)
+    for info in infoList:
+        print info.getString()
+    """"
     # create a beautiful soup object
-    
     soup = BeautifulSoup(html)
     print "Souping!"
+    
+    
+    
     trs = soup.findAll("tr", { "class":None})
-    
-    
-    scg.getPageLinks(trs)
     
     for tr in trs:
         #print tr
@@ -108,7 +144,8 @@ if __name__ == '__main__':
         if info.set != None:
             #print info.getString()
             break
-        
+    
+    """
     """
     # all links to detailed boat information have class lfloat
     links = soup.findAll("a", { "class" : "lfloat" })
