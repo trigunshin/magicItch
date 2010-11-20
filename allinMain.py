@@ -13,7 +13,7 @@ class CardInfo:
             self.price = price
             
         def getString(self):
-            return "\""+str(self.set) + ", \"" + str(self.name) + "\", \"" + str(self.price)+"\""
+            return "\""+str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price)+"\""
 
 class SCGSpoilerParser:
     """
@@ -24,9 +24,23 @@ class SCGSpoilerParser:
         #unreadMessageREGEX = re.compile("(?:<tr class=\"entry trigger new\" id=\"\w+\">.+?href=\"(index.php\?.+?)\">)+", re.DOTALL)
         self.cardNameRegex = re.compile("\">(.+)", re.DOTALL)
         self.cardSetRegex = re.compile("(.+) Singles", re.DOTALL)
+        
+        #indeces for card row info
         self.nameIndex = 0
         self.setIndex = 1
         self.priceIndex = 8
+        
+        #which TR contains the pagination links
+        self.linkIndex = 1
+
+    def getPageLinks(self, aTRSoup):
+        linkList = []
+        anchors = aTRSoup[self.linkIndex].findAll("a")
+        for anchor in anchors:
+            if anchor.text.startswith("["):
+                pageLink = anchor["href"]
+                linkList.append(pageLink)
+        return linkList
     
     def getCardInfo(self, aTDSoup):
         name = self.getName(aTDSoup)
@@ -78,18 +92,22 @@ if __name__ == '__main__':
     file.close()
     
     # create a beautiful soup object
+    
     soup = BeautifulSoup(html)
     print "Souping!"
-    
-    soup.findAll()
     trs = soup.findAll("tr", { "class":None})
+    
+    
+    scg.getPageLinks(trs)
+    
     for tr in trs:
         #print tr
         tds = tr.findAll("td")
         info = scg.getCardInfo(tds)
         
         if info.set != None:
-            print info.getString()
+            #print info.getString()
+            break
         
     """
     # all links to detailed boat information have class lfloat
