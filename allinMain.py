@@ -122,13 +122,6 @@ class SCGSpoilerParser:
         
 if __name__ == '__main__':
     scg = SCGSpoilerParser()
-    # download the page
-    
-    #user_agent = 'Mozilla/5 (Solaris 10) Gecko'
-    #headers = { 'User-Agent' : user_agent }
-    #
-    #response = urllib2.urlopen(scarsURL)
-    #html = response.read()
     """
     html = ""
     file = open(scg.scarsURL)
@@ -143,45 +136,3 @@ if __name__ == '__main__':
     infoList = scg.parseSetPageResults(scg.scarsURL)
     for info in infoList:
         print info.getString()
-    """"
-    # create a beautiful soup object
-    soup = BeautifulSoup(html)
-    print "Souping!"
-    
-    
-    
-    trs = soup.findAll("tr", { "class":None})
-    
-    for tr in trs:
-        #print tr
-        tds = tr.findAll("td")
-        info = scg.getCardInfo(tds)
-        
-        if info.set != None:
-            #print info.getString()
-            break
-    
-    """
-    """
-    # all links to detailed boat information have class lfloat
-    links = soup.findAll("a", { "class" : "lfloat" })
-    for link in links:
-        print link['href']
-        print link.string
-    """
-    
-    # all prices are spans and have the class rfloat
-    """
-    prices = soup.findAll("span", { "class" : "rfloat" })
-    for price in prices:
-        print price
-        print price.string
-    """
-    # all boat images have attribute height=105
-    """"
-    images = soup.findAll("img",height="105")
-    for image in images:
-        print image            # print the whole image tag
-        print image['src']    # print the url of the image only
-    """
-    #Helpful resources:
