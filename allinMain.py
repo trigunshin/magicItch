@@ -27,10 +27,19 @@ class HtmlReader:
 class SCGSetHashBuilder:
     def __init__(self):
         self.scgUrl = "http://sales.starcitygames.com/spoiler/spoiler.php"
+        self.codeRegex = re.compile("t\=a\&amp\;cat\=(\d{4})", re.M|re.S)
+
+    def getSoup(self):
+        self.html = HtmlReader(self.scgUrl).readHtml() 
+        self.soup = BeautifulSoup(self.html) 
+        return self
 
     def build(self):
-        self.html = HtmlReader(self.scgUrl).readHtml() 
-        soup = BeautifulSoup(self.html);
+        self.matches = filter(lambda x: x is not None, \
+                              map(lambda y: self.codeRegex.search(str(y)), \
+                                  self.soup.findAll("a")))
+        self.setCodes = map(lambda x: x.group(1), self.matches)
+        return self
 
 class SCGSpoilerParser:
     """
@@ -144,8 +153,6 @@ if __name__ == '__main__':
     html = response.read()
     spoilerSoup = BeautifulSoup(html)
     
-    
-    
     """
     html = ""
     file = open(scg.scarsURL)
@@ -155,4 +162,10 @@ if __name__ == '__main__':
             break
         html+= line
     file.close()
-"""
+    """
+    infoList = scg.parseSetPageResults(scarsURL)
+    som = open("test/scg_som.csv", 'w')
+    for info in infoList:
+        print info.getString()
+        som.write(info.getString()+"\n")
+    som.close()
