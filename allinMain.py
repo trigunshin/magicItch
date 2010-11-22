@@ -24,20 +24,28 @@ class HtmlReader:
         file = urllib2.urlopen(self.url)
         return file.read();
 
+class SCGURLBuilder:
+        def __init__(self):
+            self.baseURL = "http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[TOKEN]=TOKEN&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
+            
+        def getSetURLs(self, aSetIDList):
+            urlList = []
+            for set in aSetIDList:
+                currentURL = self.baseURL.replace('TOKEN', set)
+                urlList.append(currentURL)
+            return urlList
+
 class SCGSetHashBuilder:
     def __init__(self):
         self.scgUrl = "http://sales.starcitygames.com/spoiler/spoiler.php"
         self.codeRegex = re.compile("t\=a\&amp\;cat\=(\d{4})", re.M|re.S)
 
-    def getSoup(self):
-        self.html = HtmlReader(self.scgUrl).readHtml() 
-        self.soup = BeautifulSoup(self.html) 
-        return self
-
     def build(self):
+        html = HtmlReader(self.scgUrl).readHtml()
+        soup = BeautifulSoup(html)
         self.matches = filter(lambda x: x is not None, \
                               map(lambda y: self.codeRegex.search(str(y)), \
-                                  self.soup.findAll("a")))
+                                  soup.findAll("a")))
         self.setCodes = map(lambda x: x.group(1), self.matches)
         return self
 
@@ -143,21 +151,19 @@ class SCGSpoilerParser:
 if __name__ == '__main__':
     scg = SCGSpoilerParser()
     #self.scarsURL = "test/scars_1.html"#"http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
-    sets=[[5197, "Scars of Mirrodin"]]
+    #sets=[[5197, "Scars of Mirrodin"]]
     #scg.parseAllSets(sets)
-    
-    spoilerURL = "http://sales.starcitygames.com/spoiler/spoiler.php"
-    user_agent = 'Mozilla/5 (Solaris 10) Gecko'
-    headers = { 'User-Agent' : user_agent }
-#    response = urllib2.urlopen(aSetURL)
-#    html = response.read()
-#    spoilerSoup = BeautifulSoup(html)
-    
+        
     setBuilder = SCGSetHashBuilder()
-    setBuilder.getSoup()
     setBuilder.build()
+    #print setBuilder.setCodes
+    urls = SCGURLBuilder()
+    urlList = urls.getSetURLs(setBuilder.setCodes)
+    print "Acquired URLs!"
+    allCardInfo = []
+    for url in urlList:
+        allCardInfo += scg.parseSetPageResults(url)
     
-    print setBuilder.setCodes
     
     """
     html = ""
@@ -170,9 +176,9 @@ if __name__ == '__main__':
     file.close()
 
     infoList = scg.parseSetPageResults(scarsURL)
-    som = open("test/scg_som.csv", 'w')
-    for info in infoList:
-        print info.getString()
-        som.write(info.getString()+"\n")
+    """
+    print "Starting file output!"
+    som = open("test/scg_all.csv", 'w')
+    for card in allCardInfo:
+        som.write(card.getString()+"\n")
     som.close()
-    #"""
