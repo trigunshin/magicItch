@@ -27,10 +27,19 @@ class HtmlReader:
 class SCGSetHashBuilder:
     def __init__(self):
         self.scgUrl = "http://sales.starcitygames.com/spoiler/spoiler.php"
+        self.codeRegex = re.compile("t\=a\&amp\;cat\=(\d{4})", re.M|re.S)
+
+    def getSoup(self):
+        self.html = HtmlReader(self.scgUrl).readHtml() 
+        self.soup = BeautifulSoup(self.html) 
+        return self
 
     def build(self):
-        self.html = HtmlReader(self.scgUrl).readHtml() 
-        soup = BeautifulSoup(self.html);
+        self.matches = filter(lambda x: x is not None, \
+                              map(lambda y: self.codeRegex.search(str(y)), \
+                                  self.soup.findAll("a")))
+        self.setCodes = map(lambda x: x.group(1), self.matches)
+        return self
 
 class SCGSpoilerParser:
     """
