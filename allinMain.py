@@ -144,14 +144,20 @@ if __name__ == '__main__':
     scg = SCGSpoilerParser()
     #self.scarsURL = "test/scars_1.html"#"http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
     sets=[[5197, "Scars of Mirrodin"]]
-    scg.parseAllSets(sets)
+    #scg.parseAllSets(sets)
     
     spoilerURL = "http://sales.starcitygames.com/spoiler/spoiler.php"
     user_agent = 'Mozilla/5 (Solaris 10) Gecko'
     headers = { 'User-Agent' : user_agent }
-    response = urllib2.urlopen(aSetURL)
-    html = response.read()
-    spoilerSoup = BeautifulSoup(html)
+#    response = urllib2.urlopen(aSetURL)
+#    html = response.read()
+#    spoilerSoup = BeautifulSoup(html)
+    
+    setBuilder = SCGSetHashBuilder()
+    setBuilder.getSoup()
+    setBuilder.build()
+    
+    print setBuilder.setCodes
     
     """
     html = ""
@@ -162,10 +168,11 @@ if __name__ == '__main__':
             break
         html+= line
     file.close()
-    """
+
     infoList = scg.parseSetPageResults(scarsURL)
     som = open("test/scg_som.csv", 'w')
     for info in infoList:
         print info.getString()
         som.write(info.getString()+"\n")
     som.close()
+    #"""
