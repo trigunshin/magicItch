@@ -27,11 +27,13 @@ class HtmlReader:
 class SCGURLBuilder:
         def __init__(self):
             self.baseURL = "http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[TOKEN]=TOKEN&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
+            self.codeIndex = 0
+            self.nameIndex = 1
             
         def getSetURLs(self, aSetIDList):
             urlList = []
             for set in aSetIDList:
-                currentURL = self.baseURL.replace('TOKEN', set)
+                currentURL = self.baseURL.replace('TOKEN', set[self.codeIndex])
                 urlList.append(currentURL)
             return urlList
 
@@ -43,16 +45,15 @@ class SCGSetHashBuilder:
     def build(self):
         html = HtmlReader(self.scgUrl).readHtml()
         soup = BeautifulSoup(html)
-        self.matches = filter(lambda x: x is not None, \
-                              map(lambda y: self.codeRegex.search(str(y)), \
-                                  soup.findAll("a")))
-        self.setCodes = map(lambda x: x.group(1), self.matches)
+        inputs = soup.findAll('input',{'class':re.compile('childbox magic.+')})
+        list = []
+        for input in inputs:
+            info=[input['value'],input.nextSibling.strip()]
+            list.append(info)
+        self.setCodes = list
         return self
 
 class SCGSpoilerParser:
-    """
-    """
-
     def __init__(self):
         self.cardNameRegex = re.compile("\">(.+)", re.DOTALL)
         self.cardSetRegex = re.compile("(.+) Singles", re.DOTALL)
@@ -64,6 +65,16 @@ class SCGSpoilerParser:
         self.priceIndex = 8
         #which TR contains the pagination links
         self.linkIndex = 1
+
+    def getAllSetInfo(self):
+        setBuilder = SCGSetHashBuilder()
+        setBuilder.build()
+        urls = SCGURLBuilder()
+        urlList = urls.getSetURLs(setBuilder.setCodes)
+        allCardInfo = []
+        for url in urlList:
+            allCardInfo += self.parseSetPageResults(url)
+        return allCardInfo
 
     def parseSetPageResults(self, aSetURL):
         # download the page
@@ -153,18 +164,26 @@ if __name__ == '__main__':
     #self.scarsURL = "test/scars_1.html"#"http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
     #sets=[[5197, "Scars of Mirrodin"]]
     #scg.parseAllSets(sets)
-        
-    setBuilder = SCGSetHashBuilder()
-    setBuilder.build()
+    allSetInfo = scg.getAllSetInfo()
+    
+    #setBuilder = SCGSetHashBuilder()
+    #setBuilder.build()
     #print setBuilder.setCodes
-    urls = SCGURLBuilder()
-    urlList = urls.getSetURLs(setBuilder.setCodes)
-    print "Acquired URLs!"
-    allCardInfo = []
-    for url in urlList:
-        allCardInfo += scg.parseSetPageResults(url)
     
-    
+    """
+    scgUrl = "http://sales.starcitygames.com/spoiler/spoiler.php"
+    html = HtmlReader(scgUrl).readHtml()
+    soup = BeautifulSoup(html)
+    inputs = soup.findAll('input',{'class':re.compile('childbox magic.+')})
+    #inputs = soup.findAll('input')
+    list = []
+    for input in inputs:
+        print input['value']
+        print input.nextSibling.strip()
+        info=[input['value'],input.nextSibling.strip()]
+        print info
+        break
+    """
     """
     html = ""
     file = open(scg.scarsURL)
@@ -179,6 +198,6 @@ if __name__ == '__main__':
     """
     print "Starting file output!"
     som = open("test/scg_all.csv", 'w')
-    for card in allCardInfo:
+    for card in allSetInfo:
         som.write(card.getString()+"\n")
     som.close()
