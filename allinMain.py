@@ -1,8 +1,3 @@
-"""
-http://sales.starcitygames.com/spoiler/spoiler.php
-http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results
-"""
-
 from BeautifulSoup import BeautifulSoup
 import re
 import urllib2
@@ -14,7 +9,7 @@ class CardInfo:
             self.price = price
             
         def getString(self):
-            return "\""+str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price)+"\""
+            return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\""
 
 class HtmlReader:
     def __init__(self, url):
@@ -35,6 +30,7 @@ class SCGURLBuilder:
             for set in aSetIDList:
                 currentURL = self.baseURL.replace('TOKEN', set[self.codeIndex])
                 urlList.append(currentURL)
+                #print set[self.nameIndex] +"\t\t" + set[self.codeIndex]
             return urlList
 
 class SCGSetHashBuilder:
@@ -63,8 +59,10 @@ class SCGSpoilerParser:
         self.nameIndex = 0
         self.setIndex = 1
         self.priceIndex = 8
-        #which TR contains the pagination links
+        #which table row contains the pagination links (1,2,3, next...)
         self.linkIndex = 1
+        #The length>9 is a filter case for non-regular card info rows
+        self.cardInfoArraySize = 9
 
     def getAllSetInfo(self):
         setBuilder = SCGSetHashBuilder()
@@ -82,29 +80,33 @@ class SCGSpoilerParser:
         headers = { 'User-Agent' : user_agent }
         response = urllib2.urlopen(aSetURL)
         html = response.read()
+        print "Downloaded url:\t", aSetURL
         return self.getSetInfo(html)
-
+    
     def getSetInfo(self, aPageSource):
         infoList = []
         soup = BeautifulSoup(aPageSource)
-        trs = soup.findAll("tr", {"class":None})
+        trs = soup.findAll("tr", {"class":re.compile("deckdbbody*")})
         for tr in trs:
             tds = tr.findAll("td")
             info = scg.getCardInfo(tds)
+            print info.getString()
             if info.set != None:
                 infoList.append(info)
-        nextPageURL = self.getNextPage(trs)
+        nextPageURL = self.getNextPage(soup)
         if nextPageURL != None:
             infoList += self.parseSetPageResults(nextPageURL)
         return infoList
 
-    def getNextPage(self, aTRSoup):
+    def getNextPage(self, aSoup):
         link = None
+        aTRSoup = aSoup.findAll("tr")
         if len(aTRSoup) > 0:
             anchors = aTRSoup[self.linkIndex].findAll("a")
-            for anchor in anchors:
+            for anchor in reversed(anchors):#next is usually the last link
                 if anchor.text.find(self.nextLinkText) >= 0:
                     link = anchor["href"]
+                    break
         return link
 
     def getPageLinks(self, aTRSoup):
@@ -117,45 +119,47 @@ class SCGSpoilerParser:
         return linkList
     
     def getCardInfo(self, aTDSoup):
-        name = self.getName(aTDSoup)
-        price = self.getPrice(aTDSoup)
-        set = self.getSet(aTDSoup)
+        if(len(aTDSoup) > self.cardInfoArraySize):
+            name = self.getName(aTDSoup)
+            price = self.getPrice(aTDSoup)
+            set = self.getSet(aTDSoup)
         
         return CardInfo(set, name, price)
         
     def getName(self, aTDSoup):
-        if len(aTDSoup) > 9:
-            nameTD = aTDSoup[self.nameIndex]
-            anchors = nameTD.findAll("a")
-            for anchor in anchors:
-                matches = self.cardNameRegex.findall(anchor.text)
-                if len(matches) > 0:
-                    return matches.pop().strip()
+        nameTD = aTDSoup[self.nameIndex]
+        anchors = nameTD.findAll("a")
+        for anchor in anchors:
+            matches = self.cardNameRegex.findall(anchor.text)
+            if len(matches) > 0:
+                return matches.pop().strip()
                 
     def getSet(self, aTDSoup):
-        if len(aTDSoup) > 9:
-            setTD = aTDSoup[self.setIndex]
-            anchors = setTD.findAll("a")
-            for anchor in anchors:
-                matches = self.cardSetRegex.findall(anchor.text)
-                if len(matches) > 0:
-                    return matches.pop().strip()
+        setTD = aTDSoup[self.setIndex]
+        """
+        #obsolete with SCG refactor...
+        anchors = setTD.findAll("a")
+        for anchor in anchors:
+            matches = self.cardSetRegex.findall(anchor.text)
+            if len(matches) > 0:
+                return matches.pop().strip()
+        """
+        return setTD.text
                     
     def getPrice(self, aTDSoup):
-        if len(aTDSoup) > 9:
-            priceTD = aTDSoup[self.priceIndex]
-            return priceTD.text
+        priceTD = aTDSoup[self.priceIndex]
+        return priceTD.text
 
     def parseAllSets(self, aSetList):
         setIDIndex = 0
         setName = 1
         baseURL = "http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[TOKEN]=TOKEN&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
-        for set in sets:
+        for set in aSetList:
             currentURL = baseURL.replace('TOKEN', str(set[setIDIndex]))
             infoList = scg.parseSetPageResults(currentURL)
             som = open("test/scg_"+set[setName]+".csv", 'w')
             for info in infoList:
-                print info.getString()
+                #print info.getString()
                 som.write(info.getString()+"\n")
             som.close()
             
@@ -196,8 +200,10 @@ if __name__ == '__main__':
 
     infoList = scg.parseSetPageResults(scarsURL)
     """
+    
     print "Starting file output!"
     som = open("test/scg_all.csv", 'w')
     for card in allSetInfo:
         som.write(card.getString()+"\n")
+#        print ""
     som.close()
