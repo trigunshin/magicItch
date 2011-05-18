@@ -1,15 +1,27 @@
 from BeautifulSoup import BeautifulSoup
-import re
-import urllib2
+from datetime import date
+import time, re, getopt, sys, urllib2, inspect
 
 class CardInfo:
-        def __init__(self, set, name, price):
+        def __init__(self, set, name, price, quantity=None):
             self.set = set
             self.name = name
             self.price = price
+            self.quantity = quantity
             
+        def getString(self, delimiter = ","):
+            quote = "\""
+            endquote = " \""
+            middle = quote+delimiter+" "+endquote
+            result = quote + str(self.set) + middle +str(self.name) + middle + str(self.price) + middle + str(self.quantity) + quote 
+            #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
+            return result
+        
+        """    
         def getString(self):
-            return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\""
+            #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\""
+            return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
+        """
 
 class HtmlReader:
     def __init__(self, url):
@@ -59,10 +71,12 @@ class SCGSpoilerParser:
         self.nameIndex = 0
         self.setIndex = 1
         self.priceIndex = 8
+        self.quantIndex = 7
         #which table row contains the pagination links (1,2,3, next...)
         self.linkIndex = 1
         #The length>9 is a filter case for non-regular card info rows
         self.cardInfoArraySize = 9
+        self.notInStockString = "Out of Stock"
 
     def getAllSetInfo(self):
         setBuilder = SCGSetHashBuilder()
@@ -123,8 +137,9 @@ class SCGSpoilerParser:
             name = self.getName(aTDSoup)
             price = self.getPrice(aTDSoup)
             set = self.getSet(aTDSoup)
+            quant = self.getQuantity(aTDSoup)
         
-        return CardInfo(set, name, price)
+        return CardInfo(set, name, price, quant)
         
     def getName(self, aTDSoup):
         nameTD = aTDSoup[self.nameIndex]
@@ -136,19 +151,18 @@ class SCGSpoilerParser:
                 
     def getSet(self, aTDSoup):
         setTD = aTDSoup[self.setIndex]
-        """
-        #obsolete with SCG refactor...
-        anchors = setTD.findAll("a")
-        for anchor in anchors:
-            matches = self.cardSetRegex.findall(anchor.text)
-            if len(matches) > 0:
-                return matches.pop().strip()
-        """
         return setTD.text
                     
     def getPrice(self, aTDSoup):
         priceTD = aTDSoup[self.priceIndex]
         return priceTD.text
+
+    def getQuantity(self, aTDSoup):
+        quant = aTDSoup[self.quantIndex]
+        quantValue = quant.text
+        if(self.notInStockString in quantValue):
+            quantValue=None
+        return quantValue
 
     def parseAllSets(self, aSetList):
         setIDIndex = 0
@@ -164,46 +178,52 @@ class SCGSpoilerParser:
             som.close()
             
 if __name__ == '__main__':
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "f:", ["fileloc="])
+    except getopt.GetoptError, err:
+        # print help information and exit:
+        print str(err) # will print something like "option -a not recognized"
+        usage()
+        sys.exit(2)
+    output = None
+    verbose = False
+    for o, a in opts:
+        if o == "-v":
+            verbose = True
+        elif o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif o in ("-o", "--output"):
+            output = a
+        elif o in ("-f"):
+            output = a
+        else:
+            assert False, "unhandled option"
+    
     scg = SCGSpoilerParser()
-    #self.scarsURL = "test/scars_1.html"#"http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[5197]=5197&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
-    #sets=[[5197, "Scars of Mirrodin"]]
-    #scg.parseAllSets(sets)
     allSetInfo = scg.getAllSetInfo()
     
-    #setBuilder = SCGSetHashBuilder()
-    #setBuilder.build()
-    #print setBuilder.setCodes
-    
-    """
-    scgUrl = "http://sales.starcitygames.com/spoiler/spoiler.php"
-    html = HtmlReader(scgUrl).readHtml()
-    soup = BeautifulSoup(html)
-    inputs = soup.findAll('input',{'class':re.compile('childbox magic.+')})
-    #inputs = soup.findAll('input')
-    list = []
-    for input in inputs:
-        print input['value']
-        print input.nextSibling.strip()
-        info=[input['value'],input.nextSibling.strip()]
-        print info
-        break
-    """
-    """
-    html = ""
-    file = open(scg.scarsURL)
-    while 1:
-        line = file.readline()
-        if not line:
-            break
-        html+= line
-    file.close()
-
-    infoList = scg.parseSetPageResults(scarsURL)
-    """
-    
-    print "Starting file output!"
-    som = open("test/scg_all.csv", 'w')
+    today = date.today()
+    csvFileDest = output+"/scg_"+today.isoformat()+".csv"
+    tabFileDest = output+"/scg_"+today.isoformat()+".tsv"
+    print "Starting file output to: ", csvFileDest, tabFileDest
+    csv = open(csvFileDest, 'w')
+    tab = open(tabFileDest, 'w')
     for card in allSetInfo:
-        som.write(card.getString()+"\n")
+        csv.write(card.getString()+"\n")
+        tab.write(card.getString()+"\n")
 #        print ""
-    som.close()
+    csv.close()
+    tab.close()
+    """
+    #print dir(CardInfo)
+    #a = CardInfo("setval", "nameval", "priceval", "quantityval")
+    #print a.getString("\t")
+    #dir(a).__getattribute__
+    #for name,thing in inspect.getmembers(a):
+        #inspect.getmembers(a).
+#        print name, thing
+        pass
+    #for property, value in vars(CardInfo).iteritems():
+        #print property, ": ", value
+    """    
