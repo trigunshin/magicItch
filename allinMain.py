@@ -211,7 +211,7 @@ if __name__ == '__main__':
     tab = open(tabFileDest, 'w')
     for card in allSetInfo:
         csv.write(card.getString()+"\n")
-        tab.write(card.getString()+"\n")
+        tab.write(card.getString("\t")+"\n")
 #        print ""
     csv.close()
     tab.close()
