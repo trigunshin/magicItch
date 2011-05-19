@@ -1,6 +1,6 @@
 from BeautifulSoup import BeautifulSoup
 from datetime import date
-import time, re, getopt, sys, urllib2, inspect
+import time, re, argparse, sys, urllib2, inspect
 
 class CardInfo:
         def __init__(self, set, name, price, quantity=None):
@@ -10,10 +10,7 @@ class CardInfo:
             self.quantity = quantity
             
         def getString(self, delimiter = ","):
-            quote = "\""
-            endquote = " \""
-            middle = quote+delimiter+" "+endquote
-            result = quote + str(self.set) + middle +str(self.name) + middle + str(self.price) + middle + str(self.quantity) + quote 
+            result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity)
             #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
             return result
         
@@ -62,7 +59,8 @@ class SCGSetHashBuilder:
         return self
 
 class SCGSpoilerParser:
-    def __init__(self):
+    def __init__(self, verboseFlag=False):
+        self.verbose = verboseFlag
         self.cardNameRegex = re.compile("\">(.+)", re.DOTALL)
         self.cardSetRegex = re.compile("(.+) Singles", re.DOTALL)
         #next link info
@@ -94,7 +92,8 @@ class SCGSpoilerParser:
         headers = { 'User-Agent' : user_agent }
         response = urllib2.urlopen(aSetURL)
         html = response.read()
-        print "Downloaded url:\t", aSetURL
+        if self.verbose:
+            print "Downloaded url:\t", aSetURL
         return self.getSetInfo(html)
     
     def getSetInfo(self, aPageSource):
@@ -104,7 +103,8 @@ class SCGSpoilerParser:
         for tr in trs:
             tds = tr.findAll("td")
             info = scg.getCardInfo(tds)
-            print info.getString()
+            if self.verbose:
+                print info.getString()
             if info.set != None:
                 infoList.append(info)
         nextPageURL = self.getNextPage(soup)
@@ -178,52 +178,27 @@ class SCGSpoilerParser:
             som.close()
             
 if __name__ == '__main__':
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "f:", ["fileloc="])
-    except getopt.GetoptError, err:
-        # print help information and exit:
-        print str(err) # will print something like "option -a not recognized"
-        usage()
-        sys.exit(2)
-    output = None
-    verbose = False
-    for o, a in opts:
-        if o == "-v":
-            verbose = True
-        elif o in ("-h", "--help"):
-            usage()
-            sys.exit()
-        elif o in ("-o", "--output"):
-            output = a
-        elif o in ("-f"):
-            output = a
-        else:
-            assert False, "unhandled option"
+    parser = argparse.ArgumentParser(description='Scrape sell data from SCG website to the given file.')
+    parser.add_argument('-v', action='store_true')
+    parser.add_argument('-f')
+    args = vars(parser.parse_args())
     
-    scg = SCGSpoilerParser()
+    fullFileDirectory = "SCG/"
+    
+    if args['v']:
+        verbose = args['v']
+    if args['f'] != None:
+        fullFileDirectory = args['f']
+    
+    scg = SCGSpoilerParser(verbose)
     allSetInfo = scg.getAllSetInfo()
     
     today = date.today()
-    csvFileDest = output+"/scg_"+today.isoformat()+".csv"
-    tabFileDest = output+"/scg_"+today.isoformat()+".tsv"
-    print "Starting file output to: ", csvFileDest, tabFileDest
-    csv = open(csvFileDest, 'w')
+    tabFileDest = fullFileDirectory+"scg_"+today.isoformat()+".tsv"
+    
+    print "Starting file output to: ", tabFileDest
+    
     tab = open(tabFileDest, 'w')
     for card in allSetInfo:
-        csv.write(card.getString()+"\n")
         tab.write(card.getString("\t")+"\n")
-#        print ""
-    csv.close()
     tab.close()
-    """
-    #print dir(CardInfo)
-    #a = CardInfo("setval", "nameval", "priceval", "quantityval")
-    #print a.getString("\t")
-    #dir(a).__getattribute__
-    #for name,thing in inspect.getmembers(a):
-        #inspect.getmembers(a).
-#        print name, thing
-        pass
-    #for property, value in vars(CardInfo).iteritems():
-        #print property, ": ", value
-    """    
