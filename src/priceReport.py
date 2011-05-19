@@ -1,0 +1,64 @@
+'''
+Created on May 5, 2011
+
+@author: trigunshin
+'''
+import datetime
+import sqlite3,csv
+import time, re, getopt, sys, urllib2
+
+class PriceResult:
+    def __init__(self, aRowResult):
+        self.setName = aRowResult[0]
+        self.cardName = aRowResult[1]
+        self.firstCardPrice = int(float(aRowResult[2].strip(" \"\$"))*100)
+        self.firstCardQuantity = aRowResult[3]
+        self.firstCardDate = aRowResult[4]
+        self.secondCardPrice = int(float(aRowResult[5].strip(" \"\$"))*100)
+        self.secondCardQuantity = aRowResult[6]
+        self.secondCardDate = aRowResult[7]
+    
+    def toString(self):
+        #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
+        diff = str(self.firstCardPrice - self.secondCardPrice)
+        #return self.setName + self.cardName + str(self.firstCardPrice) + self.firstCardDate + str(self.secondCardPrice) + diffString
+        return str(self.firstCardPrice) + ", " + diff + ", " + self.setName+ ", " + self.cardName+ ", " + self.firstCardDate+", " + self.secondCardDate
+
+if __name__ == '__main__':
+    setName = 0
+    cardName = 1
+    firstCardPrice = 2
+    firstCardQuantity = 3
+    firstCardDate = 4
+    secondCardPrice = 5
+    secondCardQuantity = 6
+    secondCardDate = 7
+     
+    priceReport = "select s.Name, c.Name, p.price, p.quantity, p.date, p1.price, p1.quantity, p1.date from Card c join Price p on c.id = p.cardID join Price p1 on p1.cardID = p.cardID join CardSet s on c.setID = s.id where p1.price != p.price and p.date like ? and p1.date like ?"
+    
+    datestring = "2011-05-04"
+    csvToUse = "/Users/trigunshin/mtgPrice/scg/scg_"+datestring+".csv"
+    today = datetime.date.today().isoformat()
+    
+    #imp = scgImports(datestring)
+    #imp.connect()
+    
+    db = sqlite3.connect('/Users/trigunshin/dev/magicItch/db/sqliteDB')
+    #print db.execute("SELECT a.id FROM store a where a.name like 'Star%'").fetchall()
+    #print db.execute("SELECT count(s.name) FROM cardset s").fetchall()
+    #print priceReport
+    
+    current = datetime.date.today() + datetime.timedelta(days = 1)
+    yest = datetime.timedelta(days=-1)
+    
+    #print current
+    """
+    for row in db.execute(priceReport, [current,current+yest]).fetchall():
+        result = PriceResult(row)
+        print result.toString()
+        """
+    for row in db.execute(priceReport, ['2011-05-16','2011-05-10']).fetchall():
+        print row
+        result = PriceResult(row)
+        print result.toString()
+    db.close()
