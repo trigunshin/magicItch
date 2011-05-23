@@ -184,6 +184,7 @@ if __name__ == '__main__':
     args = vars(parser.parse_args())
     
     fullFileDirectory = "SCG/"
+    verbose = False
     
     if args['v']:
         verbose = args['v']
