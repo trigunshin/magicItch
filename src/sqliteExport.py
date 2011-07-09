@@ -11,10 +11,10 @@ class scgImports(object):
     classdocs
     '''
 
-    def __init__(self, aDate, aDelimiter = ","):
+    def __init__(self, aDate, aDBLocation, aDelimiter = ","):
         self.delimiter = aDelimiter
         self.datestring = aDate
-        self.databaseLocation = '/Users/trigunshin/dev/magicItch/db/sqliteDB'
+        self.databaseLocation = aDBLocation
         self.db = None
         self.setIndex = 0
         self.nameIndex = 1
@@ -95,6 +95,7 @@ class scgImports(object):
 if __name__ == '__main__':
     verbose = False
     datestring = "2011-05-19"
+    dbLocation = "/home/pcrane/dev/db/sqlite3/sqliteDB"
     delimiter = "\t"
     fileSuffix = ".tsv"
     fullFileDirectory = "/Users/trigunshin/mtgPrice/scg/"
@@ -105,6 +106,7 @@ if __name__ == '__main__':
     parser.add_argument('-d')
     parser.add_argument('-t', action='store_true')
     parser.add_argument('-c', action='store_true')
+    parser.add_argument('-b')
     
     args = vars(parser.parse_args())
     
@@ -114,6 +116,8 @@ if __name__ == '__main__':
     elif args['c']:
         delimiter = ","
         fileSuffix = ".csv"
+    if args['b'] != None:
+        dbLocation = args['b']
     if args['d'] != None:
         datestring = args['d'] 
     if args['f'] != None:
@@ -126,7 +130,7 @@ if __name__ == '__main__':
     #imp.clearDB(*)
     """
     #Block to check an error case
-    imp = scgImports(datestring)
+    imp = scgImports(datestring, dbLocation)
     with open(fileToUse, 'rb') as f:
             reader = csv.reader(f, delimiter="\t")
             for row in reader:
@@ -135,7 +139,7 @@ if __name__ == '__main__':
                     break
     #"""
     #"""
-    imp = scgImports(datestring, delimiter)
+    imp = scgImports(datestring, dbLocation, delimiter)
     imp.connect()
     
     imp.updateStoreListing()
