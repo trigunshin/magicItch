@@ -1,6 +1,5 @@
 import pymongo
 from pymongo import Connection
-from datetime import date
 import sys,argparse,jsonpickle,math
 
 class PriceReport(object):
@@ -38,6 +37,10 @@ class PriceReport(object):
         ret.join('\n')
         ret.join([`val`+',' for val in self.__dict__.itervalues()])
         return ret
+    
+    def toHumanString(self):
+        return self.name + " from set " + self.set + " changed price by " + str(self.priceChange) + " cents to " + \
+            str(self.endPrice) + " with a quantity change of " + str(self.quantChange) + " to " + str(self.endQuant) + "."
 
 class ReportGenerator(object):
     def __init__(self,start,end,csvFlag,store):
@@ -65,6 +68,11 @@ class ReportGenerator(object):
 
     def getReport(self,a,b):
     #    print a['name'],b['name']
+        if a is None or b is None:
+            return None
+        if a['name'] == "None" or b['name']=="None":
+            print "Ignoring entry with name of None",a['name'],b['name']
+            return None
         if a['name']!=b['name']:
             print "Name mismatch for the 2 dates! Ignoring these entries:",a,b
             return None
@@ -80,12 +88,14 @@ if __name__ == '__main__':
     endDate = None
     csvFormat = False
     outputLocation = None
+    filename = None
 
     parser = argparse.ArgumentParser(description='Use the mongo db to generate a price report.')
     parser.add_argument('-s', help="Start date in YYYY-MM-DD", required=True)
     parser.add_argument('-e', help="End date in YYYY-MM-DD", required=True)
-    parser.add_argument('-o', help="Output file. If not given, will use stdout")
-    parser.add_argument('-c', action='store_true', help="CSV format in output. NOT CURRENTLY SUPPORTED")
+    parser.add_argument('-o', help="Output file directory. If not given, will use stdout")
+    parser.add_argument('-n', help="Output filename. If not given, will use a scgSTART_END format.")    
+    parser.add_argument('-c', action='store_true', help="Store in human-readable format.")
     args = vars(parser.parse_args())
 
     if args['s']:
@@ -94,15 +104,19 @@ if __name__ == '__main__':
         endDate = args['e']
     if args['c'] != None:
         csvFormat = args['c']
+    if args['n'] != None:
+        filename = args['n']
     if args['o'] != None:
         outputDir = args['o']
         if not outputDir.endswith('/'):
-            outputDir.append('/')
-        filename = storeShort.replace(' ','') + startDate + "_" + endDate + ".tsv"
-        outputLocation = outputDir + filename
+            outputDir = outputDir+'/'
 
+    if filename is None:
+        filename = storeShort.replace(' ','')+startDate+"_"+endDate+".tsv"
+
+    outputLocation = outputDir + filename
     print "Outputting data to: ", outputLocation
-        
+    
     gen = ReportGenerator(startDate, endDate,csvFormat,storeName)
     diffs = gen.generate()
 
@@ -112,5 +126,9 @@ if __name__ == '__main__':
     else:
         with open(outputLocation, 'w') as f:
             for result in diffs:
-                f.write(result.toString())
-                f.write("\n")
+#                f.write(result.toString())
+                if csvFormat:
+                    f.write(result.toHumanString())
+                else:
+                    f.write(jsonpickle.encode(result))
+                f.write("\r\n")
