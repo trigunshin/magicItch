@@ -87,10 +87,10 @@ if __name__ == '__main__':
     #datestring = date.today().isoformat()
 
     parser = argparse.ArgumentParser(description='Upload a scg Xsv file to the mongo db.')
-    parser.add_argument('-f')
-    parser.add_argument('-d')
-    parser.add_argument('-t', action='store_true')
-    parser.add_argument('-c', action='store_true')
+    parser.add_argument('-f', required=True, help="Directory to find the file in")
+    parser.add_argument('-d', required=True, help="Date to read data from")
+    parser.add_argument('-t', action='store_true', help="Denote a TSV file")
+    parser.add_argument('-c', action='store_true', help="Denote a CSV file")
 
     args = vars(parser.parse_args())
 
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     
     if coll.find(dateQueryParam).count() == 0:
         imp.updatePriceListings(fileToUse, coll)
-        for post in coll.find({"date":datestring}).limit(5).sort(["name",pymongo.ASCENDING]):
+        for post in coll.find({"date":datestring}).limit(5).sort("name"):
             print post
     else:
         count = coll.find(dateQueryParam).count()
@@ -131,22 +131,3 @@ if __name__ == '__main__':
 #    print args
 #    print [str(args[a])+str(1) for a in args]
 #        print a
-    for post in coll.find({"date":datestring}).limit(5).sort([["set",pymongo.ASCENDING],["name", pymongo.ASCENDING]]):
-#        print post
-        pass
-
-    fullResultSet = []
-    for currSet in coll.distinct("set"):
-#        print currSet
-        start = coll.find({"date":"2011-06-21","store":"StarCity Games", "set":currSet}).sort("name")
-        end = coll.find({"date":"2011-06-22","store":"StarCity Games", "set":currSet}).sort("name")
-        result = map(getReport, start, end)
-        filteredResult = [res for res in result if res != None]
-        fullResultSet = fullResultSet+filteredResult
-#        print filteredresult[0].__dict__
-#        for diff in sortedresult:
-#            if diff is not None:
-                #print diff.toString()
-    sortedResult = sorted(fullResultSet, reverse=True,key=lambda pricereport: math.fabs(pricereport.priceChange))
-    for result in sortedResult:
-        print result.toString()
