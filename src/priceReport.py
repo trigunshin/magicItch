@@ -5,7 +5,7 @@ Created on May 5, 2011
 '''
 import datetime
 import sqlite3,csv
-import time, re, getopt, sys, urllib2
+import time, re, sys, urllib2,argparse
 
 class PriceResult:
     def __init__(self, aRowResult):
@@ -33,32 +33,58 @@ if __name__ == '__main__':
     secondCardPrice = 5
     secondCardQuantity = 6
     secondCardDate = 7
-     
+    
+    startDate = None
+    endDate = None
+    fileLoc = None
+    dbFileLoc = '/Users/trigunshin/dev/magicItch/db/sqliteDB'
+    
+
+    parser = argparse.ArgumentParser(description='Upload a scg Xsv file to the sqlite db.')
+    parser.add_argument('-o')
+    parser.add_argument('-s')
+    parser.add_argument('-e')
+    parser.add_argument('-b')
+
+    
+    args = vars(parser.parse_args())
+    
+    if args['o'] != None:
+        fileLoc = args['o']
+    else:
+        fileLoc = sys.stdout
+    if args['s'] != None:
+        startDate = args['s']
+    if args['e'] != None:
+        endDate = args['e']
+    if args['b'] != None:
+        dbFileLoc = args['b']    
+    
+
     priceReport = "select s.Name, c.Name, p.price, p.quantity, p.date, p1.price, p1.quantity, p1.date from Card c join Price p on c.id = p.cardID join Price p1 on p1.cardID = p.cardID join CardSet s on c.setID = s.id where p1.price != p.price and p.date like ? and p1.date like ?"
     
-    datestring = "2011-05-04"
-    csvToUse = "/Users/trigunshin/mtgPrice/scg/scg_"+datestring+".csv"
     today = datetime.date.today().isoformat()
     
-    #imp = scgImports(datestring)
-    #imp.connect()
-    
-    db = sqlite3.connect('/Users/trigunshin/dev/magicItch/db/sqliteDB')
+    db = sqlite3.connect(dbFileLoc)
     #print db.execute("SELECT a.id FROM store a where a.name like 'Star%'").fetchall()
     #print db.execute("SELECT count(s.name) FROM cardset s").fetchall()
     #print priceReport
     
-    current = datetime.date.today() + datetime.timedelta(days = 1)
-    yest = datetime.timedelta(days=-1)
+#    current = datetime.date.today() + datetime.timedelta(days = 1)
+#    yest = datetime.timedelta(days=-1)
     
-    #print current
     """
     for row in db.execute(priceReport, [current,current+yest]).fetchall():
         result = PriceResult(row)
         print result.toString()
         """
-    for row in db.execute(priceReport, ['2011-05-16','2011-05-10']).fetchall():
-        print row
-        result = PriceResult(row)
-        print result.toString()
+    
+    print fileLoc
+    print dbFileLoc
+    with open(fileLoc, 'w') as f:
+        for row in db.execute(priceReport, [endDate,startDate]).fetchall():
+            #print row
+            result = PriceResult(row)
+            #print result.toString()
+            f.write(result.toString())
     db.close()
