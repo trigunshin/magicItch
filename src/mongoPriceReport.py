@@ -1,5 +1,6 @@
 import pymongo
 from pymongo import Connection
+from bintrees import AVLTree
 import sys,argparse,jsonpickle,math
 
 class PriceReport(object):
@@ -60,14 +61,26 @@ class ReportGenerator(object):
         for currSet in coll.distinct("set"):
             start = coll.find({"date":startDate,"store":self.storeName, "set":currSet}).sort("name")
             end = coll.find({"date":endDate,"store":self.storeName, "set":currSet}).sort("name")
-            result = map(self.getReport, start, end)
+            startTree = self.getTree(start)
+            endTree = self.getTree(end)
+            result = self.getTreeResult(startTree,endTree)
             filteredResult = [res for res in result if res != None]
             fullResultSet = fullResultSet+filteredResult
         sortedResult = sorted(fullResultSet, reverse=True,key=lambda pricereport: math.fabs(pricereport.priceChange))
         return sortedResult
+    
+    def getTreeResult(self, startTree, endTree):
+        a = startTree.union(endTree)
+        b = endTree.union(startTree)
+#        print [k for k in a.keys()]
+        reportList = [self.getReport(a.get(k),b.get(k)) for k in list(a.keys())]
+        return reportList
+
+    def getTree(self, objectList):
+        return AVLTree([(v['name'],v) for v in objectList])
 
     def getReport(self,a,b):
-    #    print a['name'],b['name']
+#        print a,b
         if a is None or b is None:
             return None
         if a['name'] == "None" or b['name']=="None":
@@ -76,6 +89,8 @@ class ReportGenerator(object):
         if a['name']!=b['name']:
             print "Name mismatch for the 2 dates! Ignoring these entries:",a,b
             return None
+#        print a['name'],b['name']
+
         report = PriceReport(a,b)
         if report.priceChange == 0:
             return None
