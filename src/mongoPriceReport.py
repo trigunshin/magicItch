@@ -2,6 +2,7 @@ import pymongo
 from pymongo import Connection
 from bintrees import AVLTree
 import sys,argparse,jsonpickle,math
+from time import time,clock
 
 class PriceReport(object):
 
@@ -64,16 +65,15 @@ class ReportGenerator(object):
             startTree = self.getTree(start)
             endTree = self.getTree(end)
             result = self.getTreeResult(startTree,endTree)
-            filteredResult = [res for res in result if res != None]
-            fullResultSet = fullResultSet+filteredResult
+#            filteredResult = [res for res in result if res != None]
+            fullResultSet = fullResultSet+result
         sortedResult = sorted(fullResultSet, reverse=True,key=lambda pricereport: math.fabs(pricereport.priceChange))
         return sortedResult
     
     def getTreeResult(self, startTree, endTree):
-        a = startTree.union(endTree)
-        b = endTree.union(startTree)
-#        print [k for k in a.keys()]
-        reportList = [self.getReport(a.get(k),b.get(k)) for k in list(a.keys())]
+        g = startTree.intersection(endTree)
+        reportList = [self.getReport(startTree.get(k),endTree.get(k)) for k in list(g.keys())]
+
         return reportList
 
     def getTree(self, objectList):
