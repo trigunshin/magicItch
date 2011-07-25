@@ -65,7 +65,6 @@ class ReportGenerator(object):
             startTree = self.getTree(start)
             endTree = self.getTree(end)
             result = self.getTreeResult(startTree,endTree)
-#            filteredResult = [res for res in result if res != None]
             fullResultSet = fullResultSet+result
         sortedResult = sorted(fullResultSet, reverse=True,key=lambda pricereport: math.fabs(pricereport.priceChange))
         return sortedResult
@@ -80,17 +79,6 @@ class ReportGenerator(object):
         return AVLTree([(v['name'],v) for v in objectList])
 
     def getReport(self,a,b):
-#        print a,b
-        if a is None or b is None:
-            return None
-        if a['name'] == "None" or b['name']=="None":
-            print "Ignoring entry with name of None",a['name'],b['name']
-            return None
-        if a['name']!=b['name']:
-            print "Name mismatch for the 2 dates! Ignoring these entries:",a,b
-            return None
-#        print a['name'],b['name']
-
         report = PriceReport(a,b)
         if report.priceChange == 0:
             return None
