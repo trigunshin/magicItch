@@ -45,13 +45,17 @@ class PriceReport(object):
             str(self.endPrice) + " with a quantity change of " + str(self.quantChange) + " to " + str(self.endQuant) + "."
 
 class ReportGenerator(object):
-    def __init__(self,start,end,csvFlag,store):
+    def __init__(self,start,end,csvFlag,store,filter):
         self.storeName = store
         self.startDate = start
         self.endDate = end
         self.csvFormat = csvFlag
         self.dbName = 'testCards'
         self.collName = 'priceCollection'
+        if not filter:
+            self.reportFilter = self.priceChange
+        else:
+            self.reportFilter = self.quantChange
 
     def generate(self):
         c = Connection()
@@ -65,7 +69,8 @@ class ReportGenerator(object):
             startTree = self.getTree(start)
             endTree = self.getTree(end)
             result = self.getTreeResult(startTree,endTree)
-            fullResultSet = fullResultSet+result
+            filteredResult = [res for res in result if res != None]
+            fullResultSet = fullResultSet+filteredResult
         sortedResult = sorted(fullResultSet, reverse=True,key=lambda pricereport: math.fabs(pricereport.priceChange))
         return sortedResult
     
@@ -78,10 +83,23 @@ class ReportGenerator(object):
     def getTree(self, objectList):
         return AVLTree([(v['name'],v) for v in objectList])
 
+    def priceChange(self, report):
+        if report.priceChange == 0:
+            return False
+        return True
+
+    def quantChange(self, report):
+        if report.quantChange == 0:
+            return False
+        return True
+
     def getReport(self,a,b):
         report = PriceReport(a,b)
-        if report.priceChange == 0:
-            return None
+        if self.reportFilter(report):
+            return report
+        return None
+#        if report.priceChange == 0:
+#            return None
         return report
 
 if __name__ == '__main__':
@@ -92,6 +110,7 @@ if __name__ == '__main__':
     csvFormat = False
     outputLocation = None
     filename = None
+    filterQuantity = False
 
     parser = argparse.ArgumentParser(description='Use the mongo db to generate a price report.')
     parser.add_argument('-s', help="Start date in YYYY-MM-DD", required=True)
@@ -99,6 +118,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', help="Output file directory. If not given, will use stdout")
     parser.add_argument('-n', help="Output filename. If not given, will use a scgSTART_END format.")    
     parser.add_argument('-c', action='store_true', help="Store in human-readable format.")
+    parser.add_argument('-q', action='store_true', help="Apply quantity filter instead of price filter.")
     args = vars(parser.parse_args())
 
     if args['s']:
@@ -107,6 +127,8 @@ if __name__ == '__main__':
         endDate = args['e']
     if args['c'] != None:
         csvFormat = args['c']
+    if args['q'] != None:
+        filterQuantity = args['q']
     if args['n'] != None:
         filename = args['n']
     if args['o'] != None:
@@ -120,7 +142,7 @@ if __name__ == '__main__':
     outputLocation = outputDir + filename
     print "Outputting data to: ", outputLocation
     
-    gen = ReportGenerator(startDate, endDate,csvFormat,storeName)
+    gen = ReportGenerator(startDate, endDate,csvFormat,storeName, filterQuantity)
     diffs = gen.generate()
 
     if outputLocation is None:
