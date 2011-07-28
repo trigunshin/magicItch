@@ -16,8 +16,8 @@ def mail(to, subject, text, attach):
     realToString=''
     for s in to:
         realToString = realToString + s + ","
-    print realToString
-    msg['To'] = realToString
+#    print realToString,to, [gmail_user]+[]+to
+    msg['To'] = gmail_user#realToString
     msg['Subject'] = subject
 
     msg.attach(MIMEText(text))
@@ -34,7 +34,7 @@ def mail(to, subject, text, attach):
     mailServer.starttls()
     mailServer.ehlo()
     mailServer.login(gmail_user, gmail_pwd)
-    mailServer.sendmail(gmail_user, to, msg.as_string())
+    mailServer.sendmail(gmail_user, [gmail_user]+[]+to, msg.as_string())
     # Should be mailServer.quit(), but that crashes...
     mailServer.close()
 
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     db = c['emailList']
     coll = db['emails']
     dest=[]
-    for cur in coll.find({'email':{'$exists':'true'}}):
+    for cur in coll.find({'email':{'$exists':'true'}}):#,'email':'trigunshin@gmail.com'}):
         dest.append(cur['email'])
 
     for cur in coll.find({'sender':{'$exists':'true'}}).limit(1):
