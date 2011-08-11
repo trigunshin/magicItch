@@ -82,15 +82,19 @@ if __name__ == '__main__':
     datestring = None
     delimiter = "\t"
     fileSuffix = ".tsv"
+    fileName = None
     fullFileDirectory = "/Users/trigunshin/mtgPrice/scg/"
     storeName = "StarCity Games"
     #datestring = date.today().isoformat()
 
     parser = argparse.ArgumentParser(description='Upload a scg Xsv file to the mongo db.')
     parser.add_argument('-f', required=True, help="Directory to find the file in")
-    parser.add_argument('-d', required=True, help="Date to read data from")
+    parser.add_argument('-d', required=False, help="Date to read data from. Currently only SCG supported if -n not used.")
+    parser.add_argument('-n', required=False, help="File name to read data from")
     parser.add_argument('-t', action='store_true', help="Denote a TSV file")
     parser.add_argument('-c', action='store_true', help="Denote a CSV file")
+    parser.add_argument('-s', required=False, help="Store name to use when storing file.")
+#    parser.add_argument('',required=false, help="
 
     args = vars(parser.parse_args())
 
@@ -100,16 +104,24 @@ if __name__ == '__main__':
     elif args['c']:
         delimiter = ","
         fileSuffix = ".csv"
+    if args['s']:
+        storeName = args['s']
     if args['d'] != None:
         datestring = args['d']
-    else:
-        print "Date required!"
-        exit()
+#        fileName = "scg_"+datestring+fileSuffix
+    if args['n'] != None:
+        fileName = args['n']
+#    else:
+#        print "Date or name required!"
+#        exit()
     if args['f'] != None:
         fullFileDirectory = args['f']
 
-    fileName = "scg_"+datestring+fileSuffix
+    if fileName == None:
+        fileName = "scg_"+datestring+fileSuffix
     fileToUse = fullFileDirectory + fileName
+
+    print "Writing to:",fileToUse
 
     c = Connection()
     db = c['testCards']
@@ -117,11 +129,11 @@ if __name__ == '__main__':
 
     imp = scgImports(datestring, storeName, delimiter)
     
-    dateQueryParam = {"date":datestring}
+    dateQueryParam = {"date":datestring, "store":storeName}
     
     if coll.find(dateQueryParam).count() == 0:
         imp.updatePriceListings(fileToUse, coll)
-        for post in coll.find({"date":datestring}).limit(5).sort("name"):
+        for post in coll.find(dateQueryParam).limit(5).sort("name"):
             print post
     else:
         count = coll.find(dateQueryParam).count()
