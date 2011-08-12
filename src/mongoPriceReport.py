@@ -119,8 +119,11 @@ if __name__ == '__main__':
     parser.add_argument('-n', help="Output filename. If not given, will use a scgSTART_END format.")    
     parser.add_argument('-c', action='store_true', help="Store in human-readable format.")
     parser.add_argument('-q', action='store_true', help="Apply quantity filter instead of price filter.")
+    parser.add_argument('-r', help="Set store name.")
     args = vars(parser.parse_args())
 
+    if args['r']:
+        storeName = args['r']
     if args['s']:
         startDate = args['s']
     if args['e']:
