@@ -121,7 +121,7 @@ if __name__ == '__main__':
         fileName = "scg_"+datestring+fileSuffix
     fileToUse = fullFileDirectory + fileName
 
-    print "Writing to:",fileToUse
+    print "Reading from:",fileToUse
 
     c = Connection()
     db = c['testCards']
