@@ -55,7 +55,7 @@ if __name__ == '__main__':
     db = c['emailList']
     coll = db['emails']
     dest=[]
-    for cur in coll.find({'email':{'$exists':'true'}}):#,'email':'trigunshin@gmail.com'}):
+    for cur in coll.find({'email':{'$exists':'true'}}):
         dest.append(cur['email'])
 
     for cur in coll.find({'sender':{'$exists':'true'}}).limit(1):
