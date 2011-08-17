@@ -133,7 +133,7 @@ if __name__ == '__main__':
     
     if coll.find(dateQueryParam).count() == 0:
         imp.updatePriceListings(fileToUse, coll)
-        for post in coll.find(dateQueryParam).limit(5).sort("name"):
+        for post in coll.find(dateQueryParam).limit(2).sort("name"):
             print post
     else:
         count = coll.find(dateQueryParam).count()
