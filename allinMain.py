@@ -154,8 +154,13 @@ class SCGSpoilerParser:
         return setTD.text
                     
     def getPrice(self, aTDSoup):
+        retval=None
         priceTD = aTDSoup[self.priceIndex]
-        return priceTD.text
+        if(priceTD.span != None):
+            retval = priceTD.span.findNextSibling('span').text
+        else:
+            retval = priceTD.text
+        return retval
 
     def getQuantity(self, aTDSoup):
         quant = aTDSoup[self.quantIndex]
@@ -179,8 +184,8 @@ class SCGSpoilerParser:
             
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Scrape sell data from SCG website to the given file.')
-    parser.add_argument('-v', action='store_true')
-    parser.add_argument('-f')
+    parser.add_argument('-v', action='store_true', help='Verbose flag')
+    parser.add_argument('-f', help="File directory to download data to.")
     args = vars(parser.parse_args())
     
     fullFileDirectory = "SCG/"
