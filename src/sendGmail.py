@@ -22,12 +22,15 @@ def mail(to, subject, text, attach):
 
     msg.attach(MIMEText(text))
 
-    part = MIMEBase('application', 'octet-stream')
-    part.set_payload(open(attach, 'rb').read())
-    Encoders.encode_base64(part)
-    part.add_header('Content-Disposition',
-            'attachment; filename="%s"' % os.path.basename(attach))
-    msg.attach(part)
+
+    #attach each file in the list
+    for file in attach:
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(open(file, 'rb').read())
+        Encoders.encode_base64(part)
+        part.add_header('Content-Disposition',
+                'attachment; filename="%s"' % os.path.basename(file))
+        msg.attach(part)
 
     mailServer = smtplib.SMTP("smtp.gmail.com", 587)
     mailServer.ehlo()
@@ -40,7 +43,7 @@ def mail(to, subject, text, attach):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Herp.')
-    parser.add_argument('-f', required=True, help="File to send.")
+    parser.add_argument('-f', action='append', required=True, help="File to send.")
 
     args = vars(parser.parse_args())
     gmail_user = "your_email@gmail.com"
