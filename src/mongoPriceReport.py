@@ -156,13 +156,17 @@ if __name__ == '__main__':
     if outputLocation is None:
         for result in diffs:
             print result.toString()
+            diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
+#            print diff
+            diffCollection.insert(diff)
+
     else:
         with open(outputLocation, 'w') as f:
             for result in diffs:
-                diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.start}]
-#                print diff,result.start
-                diffCollection.insert(diff)
 #                f.write(result.toString())
+                diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
+#                print diff
+                diffCollection.insert(diff)
                 if csvFormat:
                     f.write(result.toHumanString())
                 else:
