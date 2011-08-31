@@ -111,6 +111,7 @@ if __name__ == '__main__':
     outputLocation = None
     filename = None
     filterQuantity = False
+    outputDir = ""
 
     parser = argparse.ArgumentParser(description='Use the mongo db to generate a price report.')
     parser.add_argument('-s', help="Start date in YYYY-MM-DD", required=True)
@@ -148,12 +149,19 @@ if __name__ == '__main__':
     gen = ReportGenerator(startDate, endDate,csvFormat,storeName, filterQuantity)
     diffs = gen.generate()
 
+    c=Connection()
+    db=c[gen.dbName]
+    diffCollection=db["priceReports"]
+
     if outputLocation is None:
         for result in diffs:
             print result.toString()
     else:
         with open(outputLocation, 'w') as f:
             for result in diffs:
+                diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.start}]
+#                print diff,result.start
+                diffCollection.insert(diff)
 #                f.write(result.toString())
                 if csvFormat:
                     f.write(result.toHumanString())
