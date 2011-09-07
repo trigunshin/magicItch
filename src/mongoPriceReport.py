@@ -64,8 +64,8 @@ class ReportGenerator(object):
         
         fullResultSet = []
         for currSet in coll.distinct("set"):
-            start = coll.find({"date":startDate,"store":self.storeName, "set":currSet}).sort("name")
-            end = coll.find({"date":endDate,"store":self.storeName, "set":currSet}).sort("name")
+            start = coll.find({"store":self.storeName, "date":startDate, "set":currSet}).sort("name")
+            end = coll.find({"store":self.storeName, "date":endDate, "set":currSet}).sort("name")
             startTree = self.getTree(start)
             endTree = self.getTree(end)
             result = self.getTreeResult(startTree,endTree)
