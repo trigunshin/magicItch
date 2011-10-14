@@ -41,8 +41,12 @@ class PriceReport(object):
         return ret
     
     def toHumanString(self):
-        return self.name + " from set " + self.set + " changed price by " + str(self.priceChange) + " cents to " + \
-            str(self.endPrice) + " with a quantity change of " + str(self.quantChange) + " to " + str(self.endQuant) + "."
+        p = str(self.endPrice)
+        p = p[:-2] + "." + p[-2:]
+        pc = str(self.priceChange)
+        pc = pc[:-2] + "." + pc[-2:]
+        return self.name + " from set " + self.set + " changed price by " + pc + " dollars to " + \
+            p + " with a quantity change of " + str(self.quantChange) + " to " + str(self.endQuant) + "."
 
 class ReportGenerator(object):
     def __init__(self,start,end,csvFlag,store,filter):
@@ -112,6 +116,7 @@ if __name__ == '__main__':
     filename = None
     filterQuantity = False
     outputDir = ""
+    sendDB = True
 
     parser = argparse.ArgumentParser(description='Use the mongo db to generate a price report.')
     parser.add_argument('-s', help="Start date in YYYY-MM-DD", required=True)
@@ -120,6 +125,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', help="Output filename. If not given, will use a scgSTART_END format.")    
     parser.add_argument('-c', action='store_true', help="Store in human-readable format.")
     parser.add_argument('-q', action='store_true', help="Apply quantity filter instead of price filter.")
+    parser.add_argument('-d', action='store_false', help="Don't send price report to the database.")
     parser.add_argument('-r', help="Set store name.")
     args = vars(parser.parse_args())
 
@@ -135,6 +141,8 @@ if __name__ == '__main__':
         filterQuantity = args['q']
     if args['n'] != None:
         filename = args['n']
+    if args['d']:
+        sendDB = args['d']
     if args['o'] != None:
         outputDir = args['o']
         if not outputDir.endswith('/'):
@@ -166,7 +174,8 @@ if __name__ == '__main__':
 #                f.write(result.toString())
                 diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
 #                print diff
-                diffCollection.insert(diff)
+                if sendDB:
+                    diffCollection.insert(diff)
                 if csvFormat:
                     f.write(result.toHumanString())
                 else:
