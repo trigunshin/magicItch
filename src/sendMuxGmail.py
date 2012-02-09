@@ -47,11 +47,11 @@ class Preferences(object):
         db = c['emailList']
         coll = db['emails']
         ret=[]
-        #for cur in coll.find({'email':{'$exists':'true'}, 
-        #                    'prefs.'+self.formats+'.values':{'$not':{'$size':0}},
-        #                    'prefs.'+self.stores+'.values':{'$not':{'$size':0}},
-        #                    }):
-        for cur in coll.find({'email':"trigunshin@gmail.com"}):
+        for cur in coll.find({'email':{'$exists':'true'}, 
+                            'prefs.'+self.formats+'.values':{'$not':{'$size':0}},
+                            'prefs.'+self.stores+'.values':{'$not':{'$size':0}},
+                            }):
+        #for cur in coll.find({'email':"trigunshin@gmail.com"}):
             ret.append(cur)
         return ret
 
