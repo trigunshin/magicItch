@@ -29,16 +29,30 @@ class PriceReport(object):
         diff = int(endval) - int(startval)
         return diff
 
+    def getCSVHeader(self):
+        #ret = ''.join([`key`+',' for key in self.__dict__.iterkeys()])
+        #return ret.rstrip(",")
+        return "name,set,priceChange,price,quantityChange,quantity"
+
     def toString(self, csvflag=False):
         if csvflag:
             return toCSVString()
         return ''.join([`key`+":"+`value`+"," for key, value in self.__dict__.iteritems()])
 
     def toCSVString(self):
-        ret = ''.join([`key`+',' for key in self.__dict__.iterkeys()])
-        ret.join('\n')
-        ret.join([`val`+',' for val in self.__dict__.itervalues()])
-        return ret
+        #ret = ''
+        #ret.join([`key`+',' for key in self.__dict__.iterkeys()])
+        #ret.join('\n')
+        #ret.join([`value`+',' for key, value in self.__dict__.iteritems()])
+        #print "iterkeys",self.__dict__.iteritems(),"\n\t",self.__dict__.itervalues()
+        #return ret.rstrip(",")
+        #return ret
+        p = str(self.endPrice)
+        p = p[:-2] + "." + p[-2:]
+        pc = str(self.priceChange)
+        pc = pc[:-2] + "." + pc[-2:]
+        return self.name+"," + self.set + "," + pc + "," + \
+            p + "," + str(self.quantChange) + "," + str(self.endQuant)
     
     def toHumanString(self):
         p = str(self.endPrice)
@@ -170,6 +184,9 @@ if __name__ == '__main__':
 
     else:
         with open(outputLocation, 'w') as f:
+            if not csvFormat:
+                f.write(diffs[0].getCSVHeader())
+                f.write("\r\n")
             for result in diffs:
 #                f.write(result.toString())
                 diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
@@ -179,5 +196,6 @@ if __name__ == '__main__':
                 if csvFormat:
                     f.write(result.toHumanString())
                 else:
-                    f.write(jsonpickle.encode(result))
+                    #f.write(jsonpickle.encode(result))
+                    f.write(result.toCSVString())
                 f.write("\r\n")
