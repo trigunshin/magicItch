@@ -61,7 +61,7 @@ class Preferences(object):
             try:
                 usrHash = self.prefHash(curUser[self.prefs][self.stores][self.vals],
                                curUser[self.prefs][self.formats][self.vals])
-            except KeyError:
+            except KeyError:#default case
                 usrHash = self.scg+self.tokenDelimiter+"txt"
 
             try:

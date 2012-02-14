@@ -63,11 +63,10 @@ class PriceReport(object):
             p + " with a quantity change of " + str(self.quantChange) + " to " + str(self.endQuant) + "."
 
 class ReportGenerator(object):
-    def __init__(self,start,end,csvFlag,store,filter):
+    def __init__(self,start,end,store,filter):
         self.storeName = store
         self.startDate = start
         self.endDate = end
-        self.csvFormat = csvFlag
         self.dbName = 'testCards'
         self.collName = 'priceCollection'
         if not filter:
@@ -125,7 +124,7 @@ if __name__ == '__main__':
     storeShort = 'scg'
     startDate = None
     endDate = None
-    csvFormat = False
+    humanFormat = False
     outputLocation = None
     filename = None
     filterQuantity = False
@@ -150,7 +149,7 @@ if __name__ == '__main__':
     if args['e']:
         endDate = args['e']
     if args['c'] != None:
-        csvFormat = args['c']
+        humanFormat = args['c']
     if args['q'] != None:
         filterQuantity = args['q']
     if args['n'] != None:
@@ -168,7 +167,7 @@ if __name__ == '__main__':
     outputLocation = outputDir + filename
     print "Outputting data to: ", outputLocation
     
-    gen = ReportGenerator(startDate, endDate,csvFormat,storeName, filterQuantity)
+    gen = ReportGenerator(startDate, endDate,storeName, filterQuantity)
     diffs = gen.generate()
 
     c=Connection()
@@ -184,16 +183,16 @@ if __name__ == '__main__':
 
     else:
         with open(outputLocation, 'w') as f:
-            if not csvFormat:
+            if not humanFormat:
                 f.write(diffs[0].getCSVHeader())
                 f.write("\r\n")
             for result in diffs:
 #                f.write(result.toString())
-                diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
 #                print diff
                 if sendDB:
+                    diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
                     diffCollection.insert(diff)
-                if csvFormat:
+                if humanFormat:
                     f.write(result.toHumanString())
                 else:
                     #f.write(jsonpickle.encode(result))
