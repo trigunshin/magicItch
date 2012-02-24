@@ -1,4 +1,5 @@
 from datetime import date
+import time
 import pymongo
 from pymongo import Connection
 import smtplib
@@ -31,7 +32,7 @@ class Preferences(object):
         return None
 
     def getUserArray(self):
-        #TODO query mongodb for users
+        #TODO turn this into more of a real test case
         usr1={self.userEmail:"t@g.c",self.prefs:{self.stores:{self.vals:[self.scg]},
                                         self.formats:{self.vals:['txt']}}}
         usr2={self.userEmail:"g@g.c",self.prefs:{self.stores:{self.vals:[self.mtgtrdr]},
@@ -163,3 +164,4 @@ if __name__ == '__main__':
         msg+="\n\nDon't forget; you can set your store and format preferences on the website now."
         subject="Hello from magicItch"#", "+str(date.today())
         mail(dest, subject, msg, file)
+        time.sleep(2)
