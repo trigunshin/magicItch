@@ -60,6 +60,7 @@ class SCGSetHashBuilder:
 
 class SCGSpoilerParser:
     def __init__(self, verboseFlag=False):
+        self.cleanNamePattern = " \(Pre-Order.+?\)"
         self.verbose = verboseFlag
         self.cardNameRegex = re.compile("\">(.+)", re.DOTALL)
         self.cardSetRegex = re.compile("(.+) Singles", re.DOTALL)
@@ -141,13 +142,16 @@ class SCGSpoilerParser:
         
         return CardInfo(set, name, price, quant)
         
+    def cleanName(self, aNameString):
+        return re.sub(self.cleanNamePattern, "", aNameString)
+
     def getName(self, aTDSoup):
         nameTD = aTDSoup[self.nameIndex]
         anchors = nameTD.findAll("a")
         for anchor in anchors:
             matches = self.cardNameRegex.findall(anchor.text)
             if len(matches) > 0:
-                return matches.pop().strip()
+                return self.cleanName(matches.pop().strip())
                 
     def getSet(self, aTDSoup):
         setTD = aTDSoup[self.setIndex]
