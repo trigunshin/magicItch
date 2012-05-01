@@ -160,7 +160,8 @@ if __name__ == '__main__':
         
         print "\tTo:",dest
         print "\tFiles:",file
-        msg="\nHey, these are the SCG price changes from the last 24 hours. Let me at know at magic.itch@gmail.com if you have any questions, comments or requests."
+        #msg="Hey,\nLast night there was an issue with (only) Avacyn Restored data for SCG. I'm re-sending the emails as there were a couple big moves from SCG on prices. Sorry for any inconvenience."
+        msg="\nHey, these are the price changes from the last 24 hours. Let me at know at magic.itch@gmail.com if you have any questions, comments or requests."
         msg+="\n\nDon't forget; you can set your store and format preferences on the website now."
         subject="Hello from magicItch"#", "+str(date.today())
         mail(dest, subject, msg, file)
