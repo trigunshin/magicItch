@@ -3,15 +3,16 @@ from datetime import date
 import csv, re, argparse, sys, urllib2
 
 class MappingGenerator:
-    def __init__(self, path, delimiter=","):
+    def __init__(self, path, delimiter=','):
         self.path = path
         self.delimiter = delimiter
         self.offsetIndexes = [0,1,2]
         self.valueIndex = 3
     
     def generateMap(self):
-        map = []
-        reader = csv.reader(self.path, self.delimiter)
+        map = {}
+        print self.path
+        reader = csv.reader(open(self.path, 'r'), delimiter=self.delimiter)
         reader.next()#skip header line
         for row in reader:
             for val in self.offsetIndexes:
@@ -32,13 +33,13 @@ if __name__ == '__main__':
     if args['v']: verbose = args['v']
     if args['m']: mappingFileLocation = args['m']
     if args['d']: mappingFileDelimiter = args['d']
-    
+
     #TODO:NEED TO CHECK/COMPARE EXISTING/CURRENT IMAGE FILE
     #TODO:NEED TO QUIT/COMPLAIN ON MAPPING ERRORS
     #"""This is durable throughout the run process
     mapGen = MappingGenerator(mappingFileLocation, mappingFileDelimiter)
     offsetValueMap = mapGen.generateMap()
-    patternValueMap = []
+    patternValueMap = {}
     patternList = []
     #"""
     
@@ -62,7 +63,8 @@ if __name__ == '__main__':
             if verbose: print "\tPattern:", cur[0], "\tOffset:", cur[1]
             #TODO: if no mapping found, handle / raise error here
             patternValueMap[cur[0]] = offsetValueMap[cur[1]]
-    else: if verbose: print "No matches!"
+    else:
+        if verbose: print "No matches!"
     
     print "patValMap",patternValueMap
     """
