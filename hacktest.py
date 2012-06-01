@@ -41,10 +41,10 @@ if __name__ == '__main__':
     regex = re.compile(cssPattern, re.DOTALL)
     matches = regex.findall(styleText)
     if matches:
+        print "Matches"
         for cur in matches:
-            print "Current match", cur
-            print "\tPattern:", cur[0]
-            print "\tOffset:", cur[1]
+            #print "Current match", cur
+            print "\tPattern:", cur[0], "\tOffset:", cur[1]
     else:
         print "No matches!"
     
