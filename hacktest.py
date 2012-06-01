@@ -1,24 +1,46 @@
 from BeautifulSoup import BeautifulSoup
 from datetime import date
-import time, re, argparse, sys, urllib2, inspect
+import csv, re, argparse, sys, urllib2
 
-class HtmlReader:
-    def __init__(self, url):
-        self.url = url
-
-    def readHtml(self):
-        file = urllib2.urlopen(self.url)
-        return file.read();
+class MappingGenerator:
+    def __init__(self, path, delimiter=","):
+        self.path = path
+        self.delimiter = delimiter
+        self.offsetIndexes = [0,1,2]
+        self.valueIndex = 3
+    
+    def generateMap(self):
+        map = []
+        reader = csv.reader(self.path, self.delimiter)
+        reader.next()#skip header line
+        for row in reader:
+            for val in self.offsetIndexes:
+                map[row[val]] = row[self.valueIndex]
+        return map
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Scrape sell data from SCG website to the given file.')
     parser.add_argument('-v', action='store_true', help='Verbose flag')
+    parser.add_argument('-m', help='File containing mappings for offset/values')
+    parser.add_argument('-d', help='Delimiter for mapping file')
     args = vars(parser.parse_args())
     
-    verbose = True
+    verbose = False
+    mappingFileLocation = "src/conf/mappings.csv"
+    mappingFileDelimiter = ","
     
-    if args['v']:
-        verbose = args['v']
+    if args['v']: verbose = args['v']
+    if args['m']: mappingFileLocation = args['m']
+    if args['d']: mappingFileDelimiter = args['d']
+    
+    #TODO:NEED TO CHECK/COMPARE EXISTING/CURRENT IMAGE FILE
+    #TODO:NEED TO QUIT/COMPLAIN ON MAPPING ERRORS
+    #"""This is durable throughout the run process
+    mapGen = MappingGenerator(mappingFileLocation, mappingFileDelimiter)
+    offsetValueMap = mapGen.generateMap()
+    patternValueMap = []
+    patternList = []
+    #"""
     
     #"""
     baseURL = "http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s_all=All&format=&c_all=All&multicolor=&colormatch=OR&ccl=0&ccu=99&t_all=All&z%5B%5D=&critter%5B%5D=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g%5BG1%5D=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=2&numpage=25&action=Show+Results"
@@ -29,26 +51,22 @@ if __name__ == '__main__':
     soup = BeautifulSoup(html)
     styleInfo = soup.findAll("style")[0]
     styleText = styleInfo.text
-    print "Style Contents",styleInfo.text
     #"""
-    """
-    styleText = ".AjvxJd {background-position:-0.6em -2px;}\
-.AjvxJd2 {background-position:-0.6em 21px;}\
-.HIjJhV {background-position:-47.5pt -2px;width:3px; }\
-.HIjJhV2 {background-position:-47.5pt 21px;width:3px; }"
-    """
+    
     cssPattern = "(\.[\S]+2) \{.+?:(.+?)[\s]"
     regex = re.compile(cssPattern, re.DOTALL)
     matches = regex.findall(styleText)
     if matches:
-        print "Matches"
+        if verbose: print "Matches"
         for cur in matches:
-            #print "Current match", cur
-            print "\tPattern:", cur[0], "\tOffset:", cur[1]
-    else:
-        print "No matches!"
+            if verbose: print "\tPattern:", cur[0], "\tOffset:", cur[1]
+            #TODO: if no mapping found, handle / raise error here
+            patternValueMap[cur[0]] = offsetValueMap[cur[1]]
+    else: if verbose: print "No matches!"
     
-    
+    print "patValMap",patternValueMap
+    """
     tab = open("testText.txt", 'w')
     tab.write(html)
     tab.close()
+    """
