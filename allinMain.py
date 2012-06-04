@@ -40,10 +40,6 @@ class SCGURLBuilder:
             for set in aSetIDList:
                 currentURL = self.baseURL.replace('TOKEN', set[self.codeIndex])
                 urlList.append(currentURL)
-                #print set[self.nameIndex] +"\t\t" + set[self.codeIndex]
-                """TESTING
-                """
-                break
             return urlList
 
 class SCGSetHashBuilder:
@@ -119,13 +115,14 @@ class SCGSpoilerParser:
 
     def getNextPage(self, aSoup):
         link = None
-        aTRSoup = aSoup.findAll("tr")
-        if len(aTRSoup) > 0:
-            anchors = aTRSoup[self.linkIndex].findAll("a")
-            for anchor in reversed(anchors):#next is usually the last link
-                if anchor.text.find(self.nextLinkText) >= 0:
-                    link = anchor["href"]
-                    break
+        tables = aSoup.findAll("table")
+        paginationTD = tables[len(tables)-1].findAll("td",{"align":"center"})[1]
+        anchors = paginationTD.findAll("a")
+        for anchor in anchors:
+            if anchor.text.find(self.nextLinkText) >= 0:
+                link = anchor["href"]
+                if self.verbose: print "next link found",link
+                break
         return link
 
     def getPageLinks(self, aTRSoup):
@@ -184,7 +181,7 @@ class SCGSpoilerParser:
                 try:
                     curValue = aValueMap[cur]
                     retval.append(curValue)
-                    if self.verbose: print "Appended value", curValue
+                    #if self.verbose: print "Appended value", curValue
                 except KeyError:
                     pass
         return ''.join(retval)
@@ -224,6 +221,7 @@ class MappingGenerator:
                 if verbose: print "\tPattern:", cur[0], "\tOffset:", cur[1]
                 #TODO: if no mapping found, handle / raise error here
                 patternValueMap[cur[0]] = self.offsetValueMap[cur[1]]
+                patternValueMap[cur[0][:6]] = self.offsetValueMap[cur[1]]#we want to add a match w/o the trailing '2'
         else:
             if self.verbose: print "No matches!"
         if self.verbose: print "patValMap",patternValueMap
@@ -249,7 +247,7 @@ if __name__ == '__main__':
     mapGen.generateOffsetMap()
     scg = SCGSpoilerParser(mapGen, verbose)
     allSetInfo = scg.getAllSetInfo()
-    """TESTING
+    """
     today = date.today()
     tabFileDest = fullFileDirectory+"scg_"+today.isoformat()+".tsv"
     
@@ -258,5 +256,6 @@ if __name__ == '__main__':
     tab = open(tabFileDest, 'w')
     for card in allSetInfo:
         tab.write(card.getString("\t")+"\n")
+
     tab.close()
     #"""
