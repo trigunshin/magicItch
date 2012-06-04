@@ -117,13 +117,14 @@ class SCGSpoilerParser:
         link = None
         tables = aSoup.findAll("table")
         if len(tables) > 0:
-            paginationTD = tables[len(tables)-1].findAll("td",{"align":"center"})[1]
-            anchors = paginationTD.findAll("a")
-            for anchor in anchors:
-                if anchor.text.find(self.nextLinkText) >= 0:
-                    link = anchor["href"]
-                    if self.verbose: print "next link found",link
-                    break
+            paginationTDs = tables[len(tables)-1].findAll("td",{"align":"center"})
+            if len(paginationTDs) > 1:
+                anchors = paginationTDs[1].findAll("a")
+                for anchor in anchors:
+                    if anchor.text.find(self.nextLinkText) >= 0:
+                        link = anchor["href"]
+                        if self.verbose: print "next link found",link
+                        break
         return link
 
     def getPageLinks(self, aTRSoup):
@@ -248,7 +249,7 @@ if __name__ == '__main__':
     mapGen.generateOffsetMap()
     scg = SCGSpoilerParser(mapGen, verbose)
     allSetInfo = scg.getAllSetInfo()
-    """
+    #"""
     today = date.today()
     tabFileDest = fullFileDirectory+"scg_"+today.isoformat()+".tsv"
     
