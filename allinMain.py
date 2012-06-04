@@ -1,6 +1,15 @@
 from BeautifulSoup import BeautifulSoup
 from datetime import date
-import time, re, argparse, sys, urllib2, inspect
+import time, re, argparse, sys, urllib, urllib2, inspect, csv
+
+class URLRequest:
+    def __init__(self):
+        user_agent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:12.0) Gecko/20100101 Firefox/12.0'
+        self.headers = { 'User-Agent' : user_agent }
+        
+    def urlopen(self, url):
+        req = urllib2.Request(url, None, self.headers)
+        return urllib2.urlopen(req).read()
 
 class CardInfo:
         def __init__(self, set, name, price, quantity=None):
@@ -14,23 +23,15 @@ class CardInfo:
             #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
             return result
         
-        """    
+        """
         def getString(self):
             #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\""
             return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
         """
 
-class HtmlReader:
-    def __init__(self, url):
-        self.url = url
-
-    def readHtml(self):
-        file = urllib2.urlopen(self.url)
-        return file.read();
-
 class SCGURLBuilder:
         def __init__(self):
-            self.baseURL = "http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[TOKEN]=TOKEN&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
+            self.baseURL = "http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[TOKEN]=TOKEN&format=&c_all=All&multicolor=&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=3&numpage=100&action=Show+Results"
             self.codeIndex = 0
             self.nameIndex = 1
             
@@ -40,15 +41,19 @@ class SCGURLBuilder:
                 currentURL = self.baseURL.replace('TOKEN', set[self.codeIndex])
                 urlList.append(currentURL)
                 #print set[self.nameIndex] +"\t\t" + set[self.codeIndex]
+                """TESTING
+                """
+                break
             return urlList
 
 class SCGSetHashBuilder:
     def __init__(self):
+        self.urlOpener = URLRequest()
         self.scgUrl = "http://sales.starcitygames.com/spoiler/spoiler.php"
         self.codeRegex = re.compile("t\=a\&amp\;cat\=(\d{4})", re.M|re.S)
 
     def build(self):
-        html = HtmlReader(self.scgUrl).readHtml()
+        html = self.urlOpener.urlopen(self.scgUrl)
         soup = BeautifulSoup(html)
         inputs = soup.findAll('input',{'class':re.compile('childbox magic.+')})
         list = []
@@ -59,7 +64,8 @@ class SCGSetHashBuilder:
         return self
 
 class SCGSpoilerParser:
-    def __init__(self, verboseFlag=False):
+    def __init__(self, mappingGenerator, verboseFlag=False):
+        self.urlOpener = URLRequest()
         self.cleanNamePattern = " \(Pre-Order.+?\)"
         self.verbose = verboseFlag
         self.cardNameRegex = re.compile("\">(.+)", re.DOTALL)
@@ -76,6 +82,7 @@ class SCGSpoilerParser:
         #The length>9 is a filter case for non-regular card info rows
         self.cardInfoArraySize = 9
         self.notInStockString = "Out of Stock"
+        self.mapgen = mappingGenerator
 
     def getAllSetInfo(self):
         setBuilder = SCGSetHashBuilder()
@@ -88,22 +95,19 @@ class SCGSpoilerParser:
         return allCardInfo
 
     def parseSetPageResults(self, aSetURL):
-        # download the page
-        user_agent = 'Mozilla/5 (Solaris 10) Gecko'
-        headers = { 'User-Agent' : user_agent }
-        response = urllib2.urlopen(aSetURL)
-        html = response.read()
+        html = self.urlOpener.urlopen(aSetURL)
         if self.verbose:
             print "Downloaded url:\t", aSetURL
         return self.getSetInfo(html)
     
     def getSetInfo(self, aPageSource):
         infoList = []
+        valueMap = self.mapgen.generateValueMap(aPageSource)
         soup = BeautifulSoup(aPageSource)
         trs = soup.findAll("tr", {"class":re.compile("deckdbbody*")})
         for tr in trs:
             tds = tr.findAll("td")
-            info = scg.getCardInfo(tds)
+            info = scg.getCardInfo(tds, valueMap)
             if self.verbose:
                 print info.getString()
             if info.set != None:
@@ -133,14 +137,14 @@ class SCGSpoilerParser:
                 linkList.append(pageLink)
         return linkList
     
-    def getCardInfo(self, aTDSoup):
+    def getCardInfo(self, aTDSoup, aValueMap):
         if(len(aTDSoup) > self.cardInfoArraySize):
             name = self.getName(aTDSoup)
-            price = self.getPrice(aTDSoup)
-            set = self.getSet(aTDSoup)
-            quant = self.getQuantity(aTDSoup)
+            price = self.getPrice(aTDSoup, aValueMap)
+            setName = self.getSet(aTDSoup)
+            quant = self.getQuantity(aTDSoup, aValueMap)
         
-        return CardInfo(set, name, price, quant)
+        return CardInfo(setName, name, price, quant)
         
     def cleanName(self, aNameString):
         return re.sub(self.cleanNamePattern, "", aNameString)
@@ -157,35 +161,75 @@ class SCGSpoilerParser:
         setTD = aTDSoup[self.setIndex]
         return setTD.text
                     
-    def getPrice(self, aTDSoup):
-        retval=None
+    def getPrice(self, aTDSoup, aValueMap):
         priceTD = aTDSoup[self.priceIndex]
-        if(priceTD.span != None):
-            retval = priceTD.span.findNextSibling('span').text
-        else:
-            retval = priceTD.text
-        return retval
+        return self.getSpriteValue(priceTD, aValueMap)
 
-    def getQuantity(self, aTDSoup):
-        quant = aTDSoup[self.quantIndex]
-        quantValue = quant.text
+    def getQuantity(self, aTDSoup, aValueMap):
+        quantTD = aTDSoup[self.quantIndex]
+        quantValue = quantTD.text
         if(self.notInStockString in quantValue):
             quantValue=None
+        else:
+            quantValue = self.getSpriteValue(quantTD, aValueMap)
         return quantValue
+    
+    def getSpriteValue(self, aTDTag, aValueMap):
+        retval = []
+        divs = aTDTag.findAll("div", {'class':True})
+        #return ''.join([curValue for curValue in [aValueMap[cur] for cur in [d['class'].split(' ') for d in divs]] if curValue != None])
+        
+        for d in divs:
+            for cur in d['class'].split(' '):
+                try:
+                    curValue = aValueMap[cur]
+                    retval.append(curValue)
+                    if self.verbose: print "Appended value", curValue
+                except KeyError:
+                    pass
+        return ''.join(retval)
+    
+class MappingGenerator:
+    def __init__(self, path, delimiter=',', verbose=False):
+        self.path = path
+        self.delimiter = delimiter
+        self.offsetIndexes = [0,1,2]
+        self.valueIndex = 3
+        self.cssPattern = "\.([\S]+2) \{.+?:(.+?)[\s]"
+        self.cssRegex = re.compile(self.cssPattern, re.DOTALL)
+        self.verbose = verbose
+    
+    def generateOffsetMap(self):
+        offsetValueMap = {}
+        print self.path
+        reader = csv.reader(open(self.path, 'r'), delimiter=self.delimiter)
+        reader.next()#skip header line
+        for row in reader:
+            for val in self.offsetIndexes:
+                offsetValueMap[row[val]] = row[self.valueIndex]
+        self.offsetValueMap = offsetValueMap
+        if self.verbose: print "offsetValMap",offsetValueMap
+        return offsetValueMap
+    
+    def generateValueMap(self, html):
+        patternValueMap = {}
+        soup = BeautifulSoup(html)
+        styleInfo = soup.findAll("style")[0]
+        styleText = styleInfo.text
+        
+        matches = self.cssRegex.findall(styleText)
+        if matches:
+            if self.verbose: print "Matches"
+            for cur in matches:
+                if verbose: print "\tPattern:", cur[0], "\tOffset:", cur[1]
+                #TODO: if no mapping found, handle / raise error here
+                patternValueMap[cur[0]] = self.offsetValueMap[cur[1]]
+        else:
+            if self.verbose: print "No matches!"
+        if self.verbose: print "patValMap",patternValueMap
+        
+        return patternValueMap
 
-    def parseAllSets(self, aSetList):
-        setIDIndex = 0
-        setName = 1
-        baseURL = "http://sales.starcitygames.com/spoiler/display.php?name=&namematch=EXACT&text=&oracle=1&textmatch=AND&flavor=&flavormatch=EXACT&s[TOKEN]=TOKEN&format=&c_all=All&colormatch=OR&ccl=0&ccu=99&t_all=All&z[]=&critter[]=&crittermatch=OR&pwrop=%3D&pwr=&pwrcc=&tghop=%3D&tgh=-&tghcc=-&mincost=0.00&maxcost=9999.99&minavail=0&maxavail=9999&r_all=All&g[G1]=NM%2FM&foil=nofoil&for=no&sort1=4&sort2=1&sort3=10&sort4=0&display=4&numpage=100&action=Show+Results"
-        for set in aSetList:
-            currentURL = baseURL.replace('TOKEN', str(set[setIDIndex]))
-            infoList = scg.parseSetPageResults(currentURL)
-            som = open("test/scg_"+set[setName]+".csv", 'w')
-            for info in infoList:
-                #print info.getString()
-                som.write(info.getString()+"\n")
-            som.close()
-            
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Scrape sell data from SCG website to the given file.')
     parser.add_argument('-v', action='store_true', help='Verbose flag')
@@ -194,15 +238,18 @@ if __name__ == '__main__':
     
     fullFileDirectory = "SCG/"
     verbose = False
+    mappingFilePath = "src/conf/mappings.csv"
     
     if args['v']:
         verbose = args['v']
     if args['f'] != None:
         fullFileDirectory = args['f']
     
-    scg = SCGSpoilerParser(verbose)
+    mapGen = MappingGenerator(mappingFilePath, ',', verbose)
+    mapGen.generateOffsetMap()
+    scg = SCGSpoilerParser(mapGen, verbose)
     allSetInfo = scg.getAllSetInfo()
-    
+    """TESTING
     today = date.today()
     tabFileDest = fullFileDirectory+"scg_"+today.isoformat()+".tsv"
     
@@ -212,3 +259,4 @@ if __name__ == '__main__':
     for card in allSetInfo:
         tab.write(card.getString("\t")+"\n")
     tab.close()
+    #"""
