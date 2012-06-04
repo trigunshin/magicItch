@@ -116,13 +116,14 @@ class SCGSpoilerParser:
     def getNextPage(self, aSoup):
         link = None
         tables = aSoup.findAll("table")
-        paginationTD = tables[len(tables)-1].findAll("td",{"align":"center"})[1]
-        anchors = paginationTD.findAll("a")
-        for anchor in anchors:
-            if anchor.text.find(self.nextLinkText) >= 0:
-                link = anchor["href"]
-                if self.verbose: print "next link found",link
-                break
+        if len(tables) > 0:
+            paginationTD = tables[len(tables)-1].findAll("td",{"align":"center"})[1]
+            anchors = paginationTD.findAll("a")
+            for anchor in anchors:
+                if anchor.text.find(self.nextLinkText) >= 0:
+                    link = anchor["href"]
+                    if self.verbose: print "next link found",link
+                    break
         return link
 
     def getPageLinks(self, aTRSoup):
