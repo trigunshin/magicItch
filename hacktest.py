@@ -28,7 +28,7 @@ class MappingGenerator:
         styleInfo = soup.findAll("style")[0]
         styleText = styleInfo.text
         
-        matches = self.cssRegex.regex.findall(styleText)
+        matches = self.cssRegex.findall(styleText)
         if matches:
             if self.verbose: print "Matches"
             for cur in matches:
