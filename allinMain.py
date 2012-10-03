@@ -1,3 +1,5 @@
+import pymongo
+from pymongo import Connection
 from BeautifulSoup import BeautifulSoup
 from datetime import date
 import time, re, argparse, sys, urllib, urllib2, inspect, csv
@@ -260,7 +262,14 @@ if __name__ == '__main__':
     mapGen.generateOffsetMap()
     scg = SCGSpoilerParser(mapGen, verbose)
     allSetInfo = scg.getAllSetInfo()
-    #"""
+    
+    c = Connection()
+    db = c['cardData']
+    coll = db['cards']
+    
+    coll.insert(allSetInfo)
+    
+    """
     today = date.today()
     tabFileDest = fullFileDirectory+"scg_"+today.isoformat()+".tsv"
     
