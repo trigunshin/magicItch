@@ -34,8 +34,8 @@ if __name__ == '__main__':
     fullFileDirectory = ""
     
     parser = argparse.ArgumentParser(description='Upload a scg Xsv file to the mongo db.')
-    parser.add_argument('-f', required=True, help="Directory to find the file in")
-    parser.add_argument('-n', required=False, help="File name to read data from")
+    parser.add_argument('-d', required=True, help="Directory to find the file in")
+    parser.add_argument('-f', required=False, help="File name to read data from")
     parser.add_argument('-t', action='store_true', help="Denote a TSV file")
     parser.add_argument('-c', action='store_true', help="Denote a CSV file")
     
@@ -47,12 +47,10 @@ if __name__ == '__main__':
     elif args['c']:
         delimiter = ","
         fileSuffix = ".csv"
-    if args['s']:
-        storeName = args['s']
-    if args['n'] != None:
-        fileName = args['n']
     if args['f'] != None:
-        fullFileDirectory = args['f']
+        fileName = args['f']
+    if args['d'] != None:
+        fullFileDirectory = args['d']
     if fileName == None:
         fileName = "scg_"+datestring+fileSuffix
     fileToUse = fullFileDirectory + fileName
