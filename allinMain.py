@@ -12,14 +12,15 @@ class URLRequest:
         return urllib2.urlopen(req).read()
 
 class CardInfo:
-        def __init__(self, set, name, price, quantity=None):
+        def __init__(self, set, name, price, quantity=None, rarity=None):
             self.set = set
             self.name = name
             self.price = price
             self.quantity = quantity
+            self.rarity = rarity
             
         def getString(self, delimiter = ","):
-            result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity)
+            result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity) + str(self.rarity)
             #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
             return result
         
@@ -71,8 +72,13 @@ class SCGSpoilerParser:
         #indeces for card row info
         self.nameIndex = 0
         self.setIndex = 1
-        self.priceIndex = 8
+        #self.manaIndex = 2
+        #self.typeIndex = 3
+        #self.ptIndex = 4
+        self.rarityIndex = 5
+        #self.conditionIndex = 6
         self.quantIndex = 7
+        self.priceIndex = 8
         #which table row contains the pagination links (1,2,3, next...)
         self.linkIndex = 1
         #The length>9 is a filter case for non-regular card info rows
@@ -89,7 +95,7 @@ class SCGSpoilerParser:
         for url in urlList:
             allCardInfo += self.parseSetPageResults(url)
         return allCardInfo
-
+    
     def parseSetPageResults(self, aSetURL):
         html = self.urlOpener.urlopen(aSetURL)
         if self.verbose:
@@ -142,8 +148,9 @@ class SCGSpoilerParser:
             price = self.getPrice(aTDSoup, aValueMap)
             setName = self.getSet(aTDSoup)
             quant = self.getQuantity(aTDSoup, aValueMap)
+            rarity = self.getRarity(aTDSoup, aValueMap)
         
-        return CardInfo(setName, name, price, quant)
+        return CardInfo(setName, name, price, quant, rarity=rarity)
         
     def cleanName(self, aNameString):
         return re.sub(self.cleanNamePattern, "", aNameString)
@@ -159,6 +166,10 @@ class SCGSpoilerParser:
     def getSet(self, aTDSoup):
         setTD = aTDSoup[self.setIndex]
         return setTD.text
+    
+    def getRarity(self, aTDSoup):
+        rarityTD = aTDSoup[self.rarityIndex]
+        return rarityTD.text
                     
     def getPrice(self, aTDSoup, aValueMap):
         priceTD = aTDSoup[self.priceIndex]
