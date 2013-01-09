@@ -5,7 +5,8 @@ from datetime import date
 import time, re, argparse, sys, urllib, urllib2, inspect, csv, hashlib
 
 class CardInfo:
-    def __init__(self, set, name, price, quantity=None, rarity=None):
+    def __init__(self, spriteHash, set, name, price, quantity=None, rarity=None):
+        self.spriteHash = spriteHash
         self.set = set
         self.name = name
         self.price = price
@@ -13,7 +14,7 @@ class CardInfo:
         self.rarity = rarity
         
     def getString(self, delimiter = ","):
-        result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity) + str(self.rarity)
+        result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity) + delimiter + str(self.rarity)
         #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
         return result
     
@@ -66,7 +67,8 @@ class SetLinkBuilder:
         self.basePageSoupCallers.append(aFunc)
 
 class CardInfoParser:
-    def __init__(self, mappingGenerator, scgParser, verboseFlag=False):
+    def __init__(self, mappingGenerator, scgParser,spriteFetcher=None, verboseFlag=False):
+        self.spriteManager = spriteFetcher
         self.urlOpener = URLRequestGenerator()
         self.scgParser = scgParser
         self.cleanNamePattern = " \(Pre-Order.+?\)"
@@ -95,15 +97,14 @@ class CardInfoParser:
     def getSetData(self, aSoup):
         if self.verbose: print "getting set info"
         infoList = []
-        valueMap = {}#self.mapgen.generateValueMap(soup)
+        valueMap = self.mapgen.generateValueMap(aSoup)
+        fileHash = self.spriteManager.getFileInfo(aSoup)[1]#this value is calculated more than once per page...
         trs = aSoup.findAll("tr", {"class":re.compile("deckdbbody*")})
         for tr in trs:
             tds = tr.findAll("td")
-            info = self.getCardInfo(tds, valueMap)
-            if self.verbose:
-                print info.getString()
-            if info.set != None:
-                infoList.append(info)
+            info = self.getCardInfo(tds, fileHash, valueMap)
+            if self.verbose: print info.getString()
+            if info.set != None: infoList.append(info)
         nextPageURL = self.getNextPage(aSoup)
         if nextPageURL != None:
             infoList += self.scgParser.parseSetPageResults(nextPageURL)
@@ -126,14 +127,14 @@ class CardInfoParser:
                 linkList.append(pageLink)
         return linkList
     
-    def getCardInfo(self, aTDSoup, aValueMap):
+    def getCardInfo(self, aTDSoup, fileHash, aValueMap):
         if(len(aTDSoup) > self.cardInfoArraySize):
             name = self.getName(aTDSoup)
             price = self.getPrice(aTDSoup, aValueMap)
             setName = self.getSet(aTDSoup)
             quant = self.getQuantity(aTDSoup, aValueMap)
             rarity = self.getRarity(aTDSoup, aValueMap)
-        return CardInfo(setName, name, price, quant, rarity=rarity)
+        return CardInfo(fileHash, setName, name, price, quant, rarity=rarity)
     
     def cleanName(self, aNameString):
         return re.sub(self.cleanNamePattern, "", aNameString)
@@ -141,10 +142,13 @@ class CardInfoParser:
     def getName(self, aTDSoup):
         nameTD = aTDSoup[self.nameIndex]
         anchors = nameTD.findAll("a")
+        return self.cleanName(anchors[0].text.strip())
+        """
         for anchor in anchors:
             matches = self.cardNameRegex.findall(anchor.text)
             if len(matches) > 0:
                 return self.cleanName(matches.pop().strip())
+        """
     
     def getSet(self, aTDSoup):
         setTD = aTDSoup[self.setIndex]
@@ -156,22 +160,31 @@ class CardInfoParser:
     
     def getPrice(self, aTDSoup, aValueMap):
         priceTD = aTDSoup[self.priceIndex]
-        #return self.getSpriteValue(priceTD, aValueMap)
-        #XXX
-        return None
+        return self.getSpriteValue(priceTD, aValueMap)
     
     def getQuantity(self, aTDSoup, aValueMap):
         quantTD = aTDSoup[self.quantIndex]
         quantValue = quantTD.text
-        """
         if(self.notInStockString in quantValue):
             quantValue=None
         else:
             quantValue = self.getSpriteValue(quantTD, aValueMap)
         return quantValue
-        """
-        #XXX
-        return None
+    """
+    Map CSS values to OCR value offsets. Returns a pipe-delimited string.
+    """
+    def getSpriteValue(self, aTDTag, aValueMap):
+        retval = []
+        divs = aTDTag.findAll("div", {'class':True})
+        for d in divs:
+            for cur in d['class']:
+                try:
+                    curValue = aValueMap[cur]
+                    retval.append(curValue)
+                    #if self.verbose: print "Appended value", curValue
+                except KeyError:
+                    pass
+        return '|'.join(retval)
 
 class SCGSpoilerParser:
     def __init__(self, urlBuilder, verboseFlag=False, debugFlag=False):
@@ -210,17 +223,17 @@ class SCGSpoilerParser:
             print soupFunc
         """
         #call all things that wanted to know about the soup
-        return [soupfunc(soup) for soupfunc in self.soupCallers]
+        return [(soupfunc.__name__, soupfunc(soup)) for soupfunc in self.soupCallers]
 
 class SpriteFetcher:
-    def __init__(self, aDBCollection, aTargetDirectory="test/", aFileType=".jpg", verbose=False):
+    def __init__(self, aDBCollection, aTargetDirectory="test/", aFileType=".png", verbose=False):
         self.spriteRegex = re.compile("url\(//(sales.+)\);", re.DOTALL)
         self.verbose = verbose
         self.coll = aDBCollection
         self.saveDir = aTargetDirectory
         self.fileType = aFileType
     
-    def saveFile(self, aSoup):
+    def save(self, aSoup):
         styleInfo = aSoup.findAll("style")[0]
         styleText = styleInfo.text
         match = self.spriteRegex.search(styleText)
@@ -243,6 +256,35 @@ class SpriteFetcher:
                                   'values':None,
                                   'hash':hashValue}
                               }, upsert=True)
+    def saveFile(self, aSoup):
+        try:
+            fileURL, hashValue, imageData = self.getFileInfo(aSoup)
+            hashResults = self.getOneByHash(hashValue)
+            if hashResults is None:
+                if self.verbose: print "found file with new md5 at url:\n\t", fileURL
+                fileLoc = self.saveDir + hashValue + self.fileType
+                with open (fileLoc, 'w') as f:
+                    f.write(imageData)
+                self.coll.insert({
+                                  'path':fileLoc,
+                                  'url':fileURL,
+                                  'values':None,
+                                  'hash':hashValue
+                              })
+        except ValueError: pass
+        
+        
+    def getFileInfo(self, aSoup):
+        styleInfo = aSoup.findAll("style")[0]
+        styleText = styleInfo.text
+        match = self.spriteRegex.search(styleText)
+        if match:
+            baseURL = match.group(1)
+            fileURL = "http://" + str(baseURL)
+            imageData = urllib2.urlopen(fileURL).read()
+            hashValue = hashlib.md5(imageData).hexdigest()
+            return (fileURL,hashValue,imageData)
+        else: return None
     def getOneByHash(self, aHash):
         #return self.coll.find_one({'hash':aHash, 'values':{'$ne':None}})
         return self.coll.find_one({'hash':aHash})
@@ -253,8 +295,8 @@ class MappingGenerator:
     def __init__(self, path, delimiter=',', verbose=False):
         self.path = path
         self.delimiter = delimiter
-        self.offsetIndexes = [0,1,2]
-        self.valueIndex = 3
+        self.offsetIndexes = [0]
+        self.valueIndex = 1
         self.cssPattern = "\.([\S]+2) \{.+?:(.+?)[\s]"
         self.cssRegex = re.compile(self.cssPattern, re.DOTALL)
         self.verbose = verbose
@@ -299,7 +341,7 @@ if __name__ == '__main__':
     fullFileDirectory = "SCG/"
     verbose = False
     debug = False
-    mappingFilePath = "src/conf/mappings.csv"
+    mappingFilePath = "ocr_map.csv"
     
     c = Connection()
     db = c['cardData']
@@ -315,19 +357,25 @@ if __name__ == '__main__':
     
     spriteFetcher = SpriteFetcher(sprites, aTargetDirectory="sprites/", verbose=verbose)
     mapGen = MappingGenerator(mappingFilePath, ',', verbose)
-    mapGen.generateOffsetMap()
+    oMap = mapGen.generateOffsetMap()
     setLinkBuilder = SetLinkBuilder()
     #example for other module to use spoilerpage soup data
     #setLinkBuilder.addBasePageSoupCaller(aFunction(theSoup))
     scg = SCGSpoilerParser(setLinkBuilder, verboseFlag=verbose, debugFlag=debug)
     scg.addSoupCaller(spriteFetcher.saveFile)
     
-    cardInfoParser = CardInfoParser(mapGen, scg, verboseFlag=verbose)
+    cardInfoParser = CardInfoParser(mapGen, scg, spriteFetcher=spriteFetcher, verboseFlag=verbose)
     scg.addSoupCaller(cardInfoParser.getSetData)
     #this is executed per-page with base soup argument passed in
     
-    allinfo = scg.getAllSetInfo()
-    allSetInfo = allinfo[1]
+    parseResults = scg.getAllSetInfo()
+    #now we want to fetch out the card data
+    allSetInfo = None
+    for result in parseResults:
+        if result[0] == cardInfoParser.getSetData.__name__:
+            allSetInfo = result[1]
+            break
+    #allSetInfo = allinfo[1][1]#maps to infoparser's data value
     
     """
     coll.insert(allSetInfo)
