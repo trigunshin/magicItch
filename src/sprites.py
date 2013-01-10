@@ -5,21 +5,30 @@ from datetime import date
 import time, re, argparse, sys, urllib, urllib2, inspect, csv, hashlib
 
 class CardInfo:
-    def __init__(self, spriteHash, set, name, price, quantity=None, rarity=None):
-        self.spriteHash = spriteHash
-        self.set = set
+    def __init__(self, spriteHash, setName, name, price, quantity=None, rarity=None):
+        self.encoding = 'utf-8'
+        
+        self.spriteHash = spriteHash.encode(self.encoding) if spriteHash else spriteHash
+        self.setName = set.encode(self.encoding) if setName else setName
+        self.name = name.encode(self.encoding) if name else name
+        self.price = price.encode(self.encoding) if price else price
+        self.quantity = quantity.encode(self.encoding) if quantity else quantity
+        self.rarity = rarity.encode(self.encoding) if rarity else rarity
+        """
+        self.setName = setName
         self.name = name
         self.price = price
         self.quantity = quantity
         self.rarity = rarity
+        #"""
         
     def getString(self, delimiter = ","):
-        result = self.set.encode('utf-8') + delimiter + \
-            self.name.encode('utf-8') + delimiter + \
-            self.price.encode('utf-8') + delimiter + \
-            self.quantity.encode('utf-8') + delimiter + \
-            self.rarity.encode('utf-8') + delimiter + \
-            self.spriteHash.encode('utf-8')
+        result = self.setName + delimiter + \
+            self.name + delimiter + \
+            self.price + delimiter + \
+            self.quantity + delimiter + \
+            self.rarity + delimiter + \
+            self.spriteHash
         return result
     
 class URLRequestGenerator:
