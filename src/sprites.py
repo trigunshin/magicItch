@@ -14,7 +14,7 @@ class CardInfo:
         self.rarity = rarity
         
     def getString(self, delimiter = ","):
-        result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity) + delimiter + str(self.rarity)
+        result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity) + delimiter + str(self.rarity) + delimiter + str(self.spriteHash)
         return result
     
 class URLRequestGenerator:
@@ -307,11 +307,6 @@ class MappingGenerator:
         
         return patternValueMap
 
-def smush(functionName, resultParse):
-    for result in resultParse:
-        if result[0] == functionName:#cardInfoParser.getSetData.__name__:
-            return result[1]
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Scrape sell data from SCG website to the given file.')
     parser.add_argument('-v', action='store_true', help='Verbose flag')
@@ -347,19 +342,14 @@ if __name__ == '__main__':
     #example for other module to use spoilerpage soup data
     #setLinkBuilder.addBasePageSoupCaller(aFunction(theSoup))
     
-    #XXX
-    #scg = SCGSpoilerParser(setLinkBuilder, verboseFlag=verbose, debugFlag=debug)
-    #scg.addSoupCaller(spriteFetcher.saveFile)
-    
     cardInfoParser = CardInfoParser(setLinkBuilder, mapGen, spriteFetcher=spriteFetcher, verboseFlag=verbose,debugFlag=debug)
+    #this is executed per-page with base soup argument passed in
     cardInfoParser.addSoupCaller(spriteFetcher.saveFile)
     cardInfoParser.addSoupCaller(cardInfoParser.getSetData)
-    #this is executed per-page with base soup argument passed in
     
     parseResults = cardInfoParser.getAllSetInfo()
     #now we want to fetch out the card data
     allSetInfo = []
-    #allSetInfo.extend(smush(cardInfoParser.getSetData.__name__, parseResults))
     #"""
     for result in parseResults:
         print result[0]
