@@ -143,12 +143,6 @@ class CardInfoParser:
         nameTD = aTDSoup[self.nameIndex]
         anchors = nameTD.findAll("a")
         return self.cleanName(anchors[0].text.strip())
-        """
-        for anchor in anchors:
-            matches = self.cardNameRegex.findall(anchor.text)
-            if len(matches) > 0:
-                return self.cleanName(matches.pop().strip())
-        """
     
     def getSet(self, aTDSoup):
         setTD = aTDSoup[self.setIndex]
@@ -217,11 +211,6 @@ class SCGSpoilerParser:
         soup = BeautifulSoup(aPageSource)
         #XXX
         valueMap = {}#self.mapgen.generateValueMap(soup)
-        """
-        print "soupcallers:"
-        for soupFunc in self.soupCallers:
-            print soupFunc
-        """
         #call all things that wanted to know about the soup
         return [(soupfunc.__name__, soupfunc(soup)) for soupfunc in self.soupCallers]
 
@@ -370,11 +359,11 @@ if __name__ == '__main__':
     
     parseResults = scg.getAllSetInfo()
     #now we want to fetch out the card data
-    allSetInfo = None
+    allSetInfo = []
     for result in parseResults:
         if result[0] == cardInfoParser.getSetData.__name__:
-            allSetInfo = result[1]
-            break
+            allSetInfo.extend(result[1])
+    print "done w/# of records:",len(allSetInfo)
     #allSetInfo = allinfo[1][1]#maps to infoparser's data value
     
     """
