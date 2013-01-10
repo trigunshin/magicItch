@@ -14,16 +14,9 @@ class CardInfo:
         self.rarity = rarity
         
     def getString(self, delimiter = ","):
-        result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity) + delimiter + str(self.rarity)
-        #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
+        result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity) + delimiter + str(self.rarity) + delimiter + str(self.spriteHash)
         return result
     
-    """
-    def getString(self):
-        #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\""
-        return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
-    """
-
 class URLRequestGenerator:
     def __init__(self):
         user_agent = 'Mozilla/5.0 (iPad; U; CPU OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B334b Safari/531.21.102011-10-16 20:23:50'
