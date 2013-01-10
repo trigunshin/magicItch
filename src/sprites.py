@@ -144,7 +144,10 @@ class CardInfoParser:
             tds = tr.findAll("td")
             info = self.getCardInfo(tds, fileHash, valueMap)
             if self.verbose: print info.getString()
-            if info.setName != None and info.name != None and info.price != None and info.spriteHash != None: infoList.append(info)
+            if info.setName != info.failString \
+                and info.name != info.failString \
+                and info.price != info.failString \
+                and info.spriteHash != info.failString: infoList.append(info)
         return infoList
     
     def getNextPage(self, aSoup):
