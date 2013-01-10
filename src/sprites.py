@@ -171,7 +171,7 @@ class CardInfoParser:
         try:
             nameTD = aTDSoup[self.nameIndex]
             anchors = nameTD.findAll("a")
-            self.cleanName(anchors[0].text.strip())
+            return self.cleanName(anchors[0].text.strip())
         except IndexError,e:
             return None
     
