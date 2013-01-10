@@ -313,6 +313,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', action='store_true', help='Debug flag')
     parser.add_argument('-f', help="File directory to download data to.")
     parser.add_argument('-s', help="File directory to download sprite images to.")
+    parser.add_argument('-m', help="File path of css mapping file.")
     args = vars(parser.parse_args())
     
     fullFileDirectory = "SCG/"
@@ -334,6 +335,8 @@ if __name__ == '__main__':
         fullFileDirectory = args['f']
     if args['s'] != None:
         spriteFilePath = args['s']
+    if args['m'] != None:
+        mappingFilePath = args['m']
     
     spriteFetcher = SpriteFetcher(sprites, aTargetDirectory=spriteFilePath, verbose=verbose)
     mapGen = MappingGenerator(mappingFilePath, ',', verbose)
