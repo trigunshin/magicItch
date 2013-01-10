@@ -14,7 +14,12 @@ class CardInfo:
         self.rarity = rarity
         
     def getString(self, delimiter = ","):
-        result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity) + delimiter + str(self.rarity) + delimiter + str(self.spriteHash)
+        result = self.set.encode('utf-8') + delimiter + \
+            self.name.encode('utf-8') + delimiter + \
+            self.price.encode('utf-8') + delimiter + \
+            self.quantity.encode('utf-8') + delimiter + \
+            self.rarity.encode('utf-8') + delimiter + \
+            self.spriteHash.encode('utf-8')
         return result
     
 class URLRequestGenerator:
@@ -171,7 +176,7 @@ class CardInfoParser:
         try:
             nameTD = aTDSoup[self.nameIndex]
             anchors = nameTD.findAll("a")
-            self.cleanName(anchors[0].text.strip())
+            return self.cleanName(anchors[0].text.strip())
         except IndexError,e:
             return None
     
@@ -219,29 +224,6 @@ class SpriteFetcher:
         self.saveDir = aTargetDirectory
         self.fileType = aFileType
     
-    def save(self, aSoup):
-        styleInfo = aSoup.findAll("style")[0]
-        styleText = styleInfo.text
-        match = self.spriteRegex.search(styleText)
-        if match:
-            baseURL = match.group(1)
-            fileURL = "http://" + str(baseURL)
-            imageData = urllib2.urlopen(fileURL).read()
-            hashValue = hashlib.md5(imageData).hexdigest()
-            
-            hashResults = self.getOneByHash(hashValue)
-            if hashResults is None:
-                if self.verbose: print "found file with new md5 at url:\n\t", fileURL
-                fileLoc = self.saveDir + hashValue + self.fileType
-                with open (fileLoc, 'w') as f:
-                    f.write(imageData)
-                self.coll.update({'path':fileURL
-                              }, {"$set":{
-                                  'path':fileLoc,
-                                  'url':fileURL,
-                                  'values':None,
-                                  'hash':hashValue}
-                              }, upsert=True)
     def saveFile(self, aSoup):
         try:
             fileURL, hashValue, imageData = self.getFileInfo(aSoup)
