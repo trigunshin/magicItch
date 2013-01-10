@@ -129,7 +129,7 @@ class CardInfoParser:
             tds = tr.findAll("td")
             info = self.getCardInfo(tds, fileHash, valueMap)
             if self.verbose: print info.getString()
-            if info.set != None: infoList.append(info)
+            if info.set != None and info.name != None and info.price != None and info.spriteHash != None: infoList.append(info)
         return infoList
     
     def getNextPage(self, aSoup):
@@ -162,9 +162,18 @@ class CardInfoParser:
         return re.sub(self.cleanNamePattern, "", aNameString)
     
     def getName(self, aTDSoup):
-        nameTD = aTDSoup[self.nameIndex]
-        anchors = nameTD.findAll("a")
-        return self.cleanName(anchors[0].text.strip())
+        #TODO
+        """
+        some entries have multiple data fields but no names; this could be 
+        extended to eventually deal with a 'lastName' to deal with these edge
+        cases while still storing relevant data.
+        """
+        try:
+            nameTD = aTDSoup[self.nameIndex]
+            anchors = nameTD.findAll("a")
+            self.cleanName(anchors[0].text.strip())
+        except IndexError,e:
+            return None
     
     def getSet(self, aTDSoup):
         setTD = aTDSoup[self.setIndex]
