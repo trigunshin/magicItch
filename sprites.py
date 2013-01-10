@@ -15,15 +15,8 @@ class CardInfo:
         
     def getString(self, delimiter = ","):
         result = str(self.set) + delimiter + str(self.name) + delimiter + str(self.price) + delimiter + str(self.quantity) + delimiter + str(self.rarity)
-        #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
         return result
     
-    """
-    def getString(self):
-        #return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\""
-        return "\"" + str(self.set) + "\", \"" + str(self.name) + "\", \"" + str(self.price) + "\", \"" +str(self.quantity)+ "\""
-    """
-
 class URLRequestGenerator:
     def __init__(self):
         user_agent = 'Mozilla/5.0 (iPad; U; CPU OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B334b Safari/531.21.102011-10-16 20:23:50'
@@ -67,12 +60,14 @@ class SetLinkBuilder:
         self.basePageSoupCallers.append(aFunc)
 
 class CardInfoParser:
-    def __init__(self, mappingGenerator, scgParser,spriteFetcher=None, verboseFlag=False):
+    def __init__(self, urlBuilder, mappingGenerator, spriteFetcher=None, verboseFlag=False, debugFlag=False):
+        self.soupCallers = []
+        self.urlBuilder = urlBuilder
         self.spriteManager = spriteFetcher
         self.urlOpener = URLRequestGenerator()
-        self.scgParser = scgParser
         self.cleanNamePattern = " \(Pre-Order.+?\)"
         self.verbose = verboseFlag
+        self.debug = debugFlag
         self.cardNameRegex = re.compile("\">(.+)", re.DOTALL)
         self.cardSetRegex = re.compile("(.+) Singles", re.DOTALL)
         #next link info
@@ -94,6 +89,36 @@ class CardInfoParser:
         self.notInStockString = "Out of Stock"
         self.mapgen = mappingGenerator
     
+    def addSoupCaller(self, aFunc):
+        self.soupCallers.append(aFunc)
+    
+    def getAllSetInfo(self):
+        urlList = self.urlBuilder.getURLGenerator()
+        allCardInfo = []
+        for url in urlList:
+            if self.verbose: print "currently on set url:", url
+            allCardInfo.extend(self.parseSetPageResults(url))
+            if self.debug: break
+        return allCardInfo
+    
+    def parseSetPageResults(self, aSetURL):
+        html = self.urlOpener.urlopen(aSetURL)
+        if self.verbose:
+            print "Downloaded url:\t", aSetURL
+        return self.getSetInfo(html)
+    
+    def getSetInfo(self, aPageSource):
+        infoList = []
+        soup = BeautifulSoup(aPageSource)
+        #call all things that wanted to know about the soup
+        ret = [(soupfunc.__name__, soupfunc(soup)) for soupfunc in self.soupCallers]
+        nextPageURL = self.getNextPage(soup)
+        if nextPageURL != None:
+            np = self.parseSetPageResults(nextPageURL)
+            print "nplen:", len(np)
+            ret.extend(self.parseSetPageResults(nextPageURL))
+        return ret
+    
     def getSetData(self, aSoup):
         if self.verbose: print "getting set info"
         infoList = []
@@ -105,9 +130,6 @@ class CardInfoParser:
             info = self.getCardInfo(tds, fileHash, valueMap)
             if self.verbose: print info.getString()
             if info.set != None: infoList.append(info)
-        nextPageURL = self.getNextPage(aSoup)
-        if nextPageURL != None:
-            infoList += self.scgParser.parseSetPageResults(nextPageURL)
         return infoList
     
     def getNextPage(self, aSoup):
@@ -179,40 +201,6 @@ class CardInfoParser:
                 except KeyError:
                     pass
         return '|'.join(retval)
-
-class SCGSpoilerParser:
-    def __init__(self, urlBuilder, verboseFlag=False, debugFlag=False):
-        self.soupCallers = []
-        self.urlOpener = URLRequestGenerator()
-        self.urlBuilder = urlBuilder
-        self.verbose = verboseFlag
-        self.debug = debugFlag
-    
-    def addSoupCaller(self, aFunc):
-        self.soupCallers.append(aFunc)
-    
-    def getAllSetInfo(self):
-        urlList = self.urlBuilder.getURLGenerator()
-        allCardInfo = []
-        for url in urlList:
-            if self.verbose: print "currently on set url:", url
-            allCardInfo += self.parseSetPageResults(url)
-            if self.debug: break
-        return allCardInfo
-    
-    def parseSetPageResults(self, aSetURL):
-        html = self.urlOpener.urlopen(aSetURL)
-        if self.verbose:
-            print "Downloaded url:\t", aSetURL
-        return self.getSetInfo(html)
-    
-    def getSetInfo(self, aPageSource):
-        infoList = []
-        soup = BeautifulSoup(aPageSource)
-        #XXX
-        valueMap = {}#self.mapgen.generateValueMap(soup)
-        #call all things that wanted to know about the soup
-        return [(soupfunc.__name__, soupfunc(soup)) for soupfunc in self.soupCallers]
 
 class SpriteFetcher:
     def __init__(self, aDBCollection, aTargetDirectory="test/", aFileType=".png", verbose=False):
@@ -292,7 +280,6 @@ class MappingGenerator:
     
     def generateOffsetMap(self):
         offsetValueMap = {}
-        print self.path
         reader = csv.reader(open(self.path, 'r'), delimiter=self.delimiter)
         reader.next()#skip header line
         for row in reader:
@@ -320,17 +307,24 @@ class MappingGenerator:
         
         return patternValueMap
 
+def smush(functionName, resultParse):
+    for result in resultParse:
+        if result[0] == functionName:#cardInfoParser.getSetData.__name__:
+            return result[1]
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Scrape sell data from SCG website to the given file.')
     parser.add_argument('-v', action='store_true', help='Verbose flag')
     parser.add_argument('-d', action='store_true', help='Debug flag')
     parser.add_argument('-f', help="File directory to download data to.")
+    parser.add_argument('-s', help="File directory to download sprite images to.")
     args = vars(parser.parse_args())
     
     fullFileDirectory = "SCG/"
     verbose = False
     debug = False
     mappingFilePath = "ocr_map.csv"
+    spriteFilePath = "sprites/"
     
     c = Connection()
     db = c['cardData']
@@ -343,34 +337,44 @@ if __name__ == '__main__':
         debug = args['d']
     if args['f'] != None:
         fullFileDirectory = args['f']
+    if args['s'] != None:
+        spriteFilePath = args['s']
     
-    spriteFetcher = SpriteFetcher(sprites, aTargetDirectory="sprites/", verbose=verbose)
+    spriteFetcher = SpriteFetcher(sprites, aTargetDirectory=spriteFilePath, verbose=verbose)
     mapGen = MappingGenerator(mappingFilePath, ',', verbose)
     oMap = mapGen.generateOffsetMap()
     setLinkBuilder = SetLinkBuilder()
     #example for other module to use spoilerpage soup data
     #setLinkBuilder.addBasePageSoupCaller(aFunction(theSoup))
-    scg = SCGSpoilerParser(setLinkBuilder, verboseFlag=verbose, debugFlag=debug)
-    scg.addSoupCaller(spriteFetcher.saveFile)
     
-    cardInfoParser = CardInfoParser(mapGen, scg, spriteFetcher=spriteFetcher, verboseFlag=verbose)
-    scg.addSoupCaller(cardInfoParser.getSetData)
+    #XXX
+    #scg = SCGSpoilerParser(setLinkBuilder, verboseFlag=verbose, debugFlag=debug)
+    #scg.addSoupCaller(spriteFetcher.saveFile)
+    
+    cardInfoParser = CardInfoParser(setLinkBuilder, mapGen, spriteFetcher=spriteFetcher, verboseFlag=verbose,debugFlag=debug)
+    cardInfoParser.addSoupCaller(spriteFetcher.saveFile)
+    cardInfoParser.addSoupCaller(cardInfoParser.getSetData)
     #this is executed per-page with base soup argument passed in
     
-    parseResults = scg.getAllSetInfo()
+    parseResults = cardInfoParser.getAllSetInfo()
     #now we want to fetch out the card data
     allSetInfo = []
+    #allSetInfo.extend(smush(cardInfoParser.getSetData.__name__, parseResults))
+    #"""
     for result in parseResults:
+        print result[0]
         if result[0] == cardInfoParser.getSetData.__name__:
             allSetInfo.extend(result[1])
+    
+    #"""
     print "done w/# of records:",len(allSetInfo)
     #allSetInfo = allinfo[1][1]#maps to infoparser's data value
     
     """
     coll.insert(allSetInfo)
-    """
+    #"""
     
-    """
+    #"""
     today = date.today()
     tabFileDest = fullFileDirectory+"scg_"+today.isoformat()+".tsv"
     
