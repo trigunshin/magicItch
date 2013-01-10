@@ -7,13 +7,14 @@ import time, re, argparse, sys, urllib, urllib2, inspect, csv, hashlib
 class CardInfo:
     def __init__(self, spriteHash, setName, name, price, quantity=None, rarity=None):
         self.encoding = 'utf-8'
+        self.failString = "None"
         
-        self.spriteHash = spriteHash.encode(self.encoding) if spriteHash else spriteHash
-        self.setName = set.encode(self.encoding) if setName else setName
-        self.name = name.encode(self.encoding) if name else name
-        self.price = price.encode(self.encoding) if price else price
-        self.quantity = quantity.encode(self.encoding) if quantity else quantity
-        self.rarity = rarity.encode(self.encoding) if rarity else rarity
+        self.spriteHash = spriteHash.encode(self.encoding) if spriteHash else self.failString
+        self.setName = setName.encode(self.encoding) if setName else self.failString
+        self.name = name.encode(self.encoding) if name else self.failString
+        self.price = price.encode(self.encoding) if price else self.failString
+        self.quantity = quantity.encode(self.encoding) if quantity else self.failString
+        self.rarity = rarity.encode(self.encoding) if rarity else self.failString
         """
         self.setName = setName
         self.name = name
@@ -143,7 +144,7 @@ class CardInfoParser:
             tds = tr.findAll("td")
             info = self.getCardInfo(tds, fileHash, valueMap)
             if self.verbose: print info.getString()
-            if info.set != None and info.name != None and info.price != None and info.spriteHash != None: infoList.append(info)
+            if info.setName != None and info.name != None and info.price != None and info.spriteHash != None: infoList.append(info)
         return infoList
     
     def getNextPage(self, aSoup):
