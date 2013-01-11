@@ -24,12 +24,18 @@ def chooseResult(first, second, verbose=False):
     if len(first) == 10:
         if len(second) == 10:
             #both are the same, return one
-            if first == second: 
+            if first == second:
+                #slice in period @ index 
+                first.insert(9,'.')
                 return validateOCR(first)
             #don't match, can't decide
             else: return None
-        else: return validateOCR(first)
-    elif len(second) == 10: return validateOCR(second)
+        else:
+            first.insert(9,'.')
+            return validateOCR(first)
+    elif len(second) == 10:
+        second.insert(9,'.')
+        return validateOCR(second)
     
     return None
     
