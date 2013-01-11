@@ -111,7 +111,6 @@ class CardInfoParser:
         urlList = self.urlBuilder.getURLGenerator()
         allCardInfo = []
         for url in urlList:
-            if self.verbose: print "currently on set url:", url
             allCardInfo.extend(self.parseSetPageResults(url))
             if self.debug: break
         return allCardInfo
