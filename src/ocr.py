@@ -3,13 +3,17 @@ from pymongo import Connection
 from datetime import date
 import time, re, argparse, sys, csv, subprocess
 
-def validateOCR(aResult):
+def validateOCR(aResult,verbose=False):
     ret = {}
     check = {}
+    if verbose: print "checking",aResult
     for i in range(len(aResult)):
         #fail out if duplicate detected, OCR is inaccurate
-        if check[aResult[i]]: return None
-        else:ret[i] = aResult[i]
+        if verbose:print "\tchecking idx",i,"w/val",aResult[i]
+        try:
+            if check[aResult[i]]: return None
+        except KeyError,e:
+            ret[i] = aResult[i]
     return ret
 
 if __name__ == '__main__':
@@ -39,7 +43,6 @@ if __name__ == '__main__':
     if args['s'] != None:
         spriteDir = args['s']
     
-    spriteDir = "sprites/"
     popen = subprocess.check_output(["/bin/bash", ocrScript, spriteDir]).split('\n')[:-1]
     triple = [line.split(' ') for line in popen]
     for t in triple:
