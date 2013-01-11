@@ -16,6 +16,24 @@ def validateOCR(aResult,verbose=False):
             ret[i] = aResult[i]
     return ret
 
+def chooseResult(first, second, verbose=False):
+    #11 length dict should be correct, use that one
+    if len(first) == 11: return validateOCR(first)
+    elif len(second) == 11: return validateOCR(second)
+    
+    if len(first) == 10:
+        if len(second) == 10:
+            #both are the same, return one
+            if first == second: 
+                return validateOCR(first)
+            #don't match, can't decide
+            else: return None
+        else: return validateOCR(first)
+    elif len(second) == 10: return validateOCR(second)
+    
+    return None
+    
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run OCR on downloaded sprite files.')
     parser.add_argument('-v', action='store_true', help='Verbose flag')
@@ -47,6 +65,7 @@ if __name__ == '__main__':
     triple = [line.split(' ') for line in popen]
     for t in triple:
         print "hash:", t[2]
-        print "ocr_top:",validateOCR(t[0])
-        print "ocr_bot:",validateOCR(t[1])
+        print "\tchose:", chooseResult(t[0],t[1])
+        #print "ocr_top:",validateOCR(t[0])
+        #print "ocr_bot:",validateOCR(t[1])
     
