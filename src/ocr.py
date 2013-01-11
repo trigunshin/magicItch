@@ -16,6 +16,9 @@ def validateOCR(aResult,verbose=False):
             ret[i] = aResult[i]
     return ret
 
+def insertPeriod(aString):
+    return aString[0:9] + '.' + aString[-1]
+
 def chooseResult(first, second, verbose=False):
     #11 length dict should be correct, use that one
     if len(first) == 11: return validateOCR(first)
@@ -26,16 +29,13 @@ def chooseResult(first, second, verbose=False):
             #both are the same, return one
             if first == second:
                 #slice in period @ index 
-                first.insert(9,'.')
-                return validateOCR(first)
+                return validateOCR(insertPeriod(first))
             #don't match, can't decide
             else: return None
         else:
-            first.insert(9,'.')
-            return validateOCR(first)
+            return validateOCR(insertPeriod(first))
     elif len(second) == 10:
-        second.insert(9,'.')
-        return validateOCR(second)
+        return validateOCR(insertPeriod(second))
     
     return None
     
