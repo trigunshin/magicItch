@@ -129,7 +129,7 @@ class CardInfoParser:
         nextPageURL = self.getNextPage(soup)
         if nextPageURL != None:
             np = self.parseSetPageResults(nextPageURL)
-            print "nplen:", len(np)
+            if self.verbose: print "nplen:", len(np)
             ret.extend(np)
         return ret
     
@@ -356,15 +356,14 @@ if __name__ == '__main__':
     cardInfoParser = CardInfoParser(setLinkBuilder, mapGen, spriteFetcher=spriteFetcher, verboseFlag=verbose,debugFlag=debug)
     #this is executed per-page with base soup argument passed in
     cardInfoParser.addSoupCaller(spriteFetcher.saveFile)
-    #cardInfoParser.addSoupCaller(cardInfoParser.getSetData)
-    cardInfoParser.addSoupCaller(callme)
+    cardInfoParser.addSoupCaller(cardInfoParser.getSetData)
+    #cardInfoParser.addSoupCaller(callme)
     
     parseResults = cardInfoParser.getAllSetInfo()
     #now we want to fetch out the card data
     allSetInfo = []
     #"""
     for result in parseResults:
-        print result[0]
         if result[0] == cardInfoParser.getSetData.__name__:
             allSetInfo.extend(result[1])
     
