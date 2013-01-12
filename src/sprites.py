@@ -130,7 +130,7 @@ class CardInfoParser:
         if nextPageURL != None:
             np = self.parseSetPageResults(nextPageURL)
             print "nplen:", len(np)
-            ret.extend(self.parseSetPageResults(nextPageURL))
+            ret.extend(np)
         return ret
     
     def getSetData(self, aSoup):
@@ -311,6 +311,7 @@ class MappingGenerator:
         return patternValueMap
 calledMe = 0
 def callme(aSoup):
+    global calledMe
     calledMe += 1
     print "calledMe",calledMe
     return calledMe
@@ -356,7 +357,7 @@ if __name__ == '__main__':
     #this is executed per-page with base soup argument passed in
     cardInfoParser.addSoupCaller(spriteFetcher.saveFile)
     #cardInfoParser.addSoupCaller(cardInfoParser.getSetData)
-    cardInfoParser.addSoupCaller(calledMe)
+    cardInfoParser.addSoupCaller(callme)
     
     parseResults = cardInfoParser.getAllSetInfo()
     #now we want to fetch out the card data
