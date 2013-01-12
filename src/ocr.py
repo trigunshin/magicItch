@@ -55,7 +55,6 @@ if __name__ == '__main__':
     
     c = Connection()
     db = c['cardData']
-    coll = db['cards']
     sprites = db['sprites']
     
     if args['v']:
@@ -71,7 +70,12 @@ if __name__ == '__main__':
     triple = [line.split(' ') for line in popen]
     for t in triple:
         print "hash:", t[2]
+        result = chooseResult(t[0],t[1])
         print "\tchose:", chooseResult(t[0],t[1])
+        if result is not None:
+            sprites.update({'hash':t[2],
+                            'values':{'$set':result}
+                        })
         #print "ocr_top:",validateOCR(t[0])
         #print "ocr_bot:",validateOCR(t[1])
     
