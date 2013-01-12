@@ -241,7 +241,7 @@ class SpriteFetcher:
             fileURL, hashValue, imageData = self.getFileInfo(aSoup)
             hashResults = self.getOneByHash(hashValue)
             if hashResults is None:
-                if self.verbose: print "found file with new md5 at url:\n\t", fileURL
+                if self.verbose: print "found file with new md5 at url:", fileURL
                 fileLoc = self.saveDir + hashValue + self.fileType
                 with open (fileLoc, 'w') as f:
                     f.write(imageData)
