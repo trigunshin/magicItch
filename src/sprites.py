@@ -310,7 +310,11 @@ class MappingGenerator:
         if self.verbose: print "patValMap",patternValueMap
         
         return patternValueMap
-
+calledMe = 0
+def callme(aSoup):
+    calledMe += 1
+    print "calledMe",calledMe
+    return calledMe
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Scrape sell data from SCG website to the given file.')
     parser.add_argument('-v', action='store_true', help='Verbose flag')
@@ -352,7 +356,8 @@ if __name__ == '__main__':
     cardInfoParser = CardInfoParser(setLinkBuilder, mapGen, spriteFetcher=spriteFetcher, verboseFlag=verbose,debugFlag=debug)
     #this is executed per-page with base soup argument passed in
     cardInfoParser.addSoupCaller(spriteFetcher.saveFile)
-    cardInfoParser.addSoupCaller(cardInfoParser.getSetData)
+    #cardInfoParser.addSoupCaller(cardInfoParser.getSetData)
+    cardInfoParser.addSoupCaller(calledMe)
     
     parseResults = cardInfoParser.getAllSetInfo()
     #now we want to fetch out the card data
