@@ -76,6 +76,8 @@ if __name__ == '__main__':
             sprites.update({'hash':t[2]},
                             {'values':{'$set':result}
                         })
+            code = subprocess.call(["mv", spriteDir+str(t[2])+".png", spriteDir+"done/"])
+            if not code == 0: print "error moving hashfile",spriteDir+str(t[2])+".png","to",spriteDir+"done/"
         #print "ocr_top:",validateOCR(t[0])
         #print "ocr_bot:",validateOCR(t[1])
     
