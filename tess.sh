@@ -18,4 +18,6 @@ do
     TEXT=`cat $hash.txt`
     TEXT="$TEXT $hash"
     echo $TEXT |paste -s
+    mv "$hash.png" "done"
+    rm "$hash.txt"
 done
