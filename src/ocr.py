@@ -11,8 +11,12 @@ def validateOCR(aResult,verbose=False):
         #fail out if duplicate detected, OCR is inaccurate
         if verbose:print "\tchecking idx",i,"w/val",aResult[i]
         try:
-            if check[aResult[i]]: return None
+            if check[aResult[i]]:
+                if verbose: print "had result",aResult[i],"at",i," quitting"
+                print check
+                return None
         except KeyError,e:
+            check[aResult[i]] = True
             ret[str(i)] = aResult[i]
     return ret
 
@@ -21,22 +25,17 @@ def insertPeriod(aString):
 
 def chooseResult(first, second, verbose=False):
     #11 length dict should be correct, use that one
-    if len(first) == 11: return validateOCR(first)
-    elif len(second) == 11: return validateOCR(second)
+    if len(first) == 11: return validateOCR(first, verbose)
+    elif len(second) == 11: return validateOCR(second, verbose)
     
+    #try the first
     if len(first) == 10:
-        if len(second) == 10:
-            #both are the same, return one
-            if first == second:
-                #slice in period @ index 
-                return validateOCR(insertPeriod(first))
-            #don't match, can't decide
-            else: return None
-        else:
-            return validateOCR(insertPeriod(first))
-    elif len(second) == 10:
-        return validateOCR(insertPeriod(second))
-    
+        ret = validateOCR(insertPeriod(first), verbose)
+        if ret is not None: return ret
+    #first had bad len or didn't convert, try second
+    if len(second) == 10:
+        return validateOCR(insertPeriod(second), verbose)
+    #nothing had length or converted
     return None
     
 
