@@ -67,12 +67,13 @@ if __name__ == '__main__':
         spriteDir = args['s']
     
     popen = subprocess.check_output(["/bin/bash", ocrScript, spriteDir]).split('\n')[:-1]
-    triple = [line.split(' ') for line in popen]
+    triple = [line.split('|') for line in popen]
     for t in triple:
         print "hash:", t[2]
+        print "\tthings:",t[0],"|",t[1]
         result = chooseResult(t[0],t[1])
         print "\tchose:", result
-        if result is not None:
+        if True:#result is not None:
             sprites.update({'hash':t[2]},
                             {'values':{'$set':result}
                         })
