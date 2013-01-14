@@ -13,7 +13,7 @@ def validateOCR(aResult,verbose=False):
         try:
             if check[aResult[i]]: return None
         except KeyError,e:
-            ret[i] = aResult[i]
+            ret[str(i)] = aResult[i]
     return ret
 
 def insertPeriod(aString):
@@ -71,10 +71,10 @@ if __name__ == '__main__':
     for t in triple:
         print "hash:", t[2]
         result = chooseResult(t[0],t[1])
-        print "\tchose:", chooseResult(t[0],t[1])
+        print "\tchose:", result
         if result is not None:
-            sprites.update({'hash':t[2],
-                            'values':{'$set':result}
+            sprites.update({'hash':t[2]},
+                            {'values':{'$set':result}
                         })
         #print "ocr_top:",validateOCR(t[0])
         #print "ocr_bot:",validateOCR(t[1])
