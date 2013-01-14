@@ -70,7 +70,7 @@ if __name__ == '__main__':
         print "hash:", t[2],":",t[0],"|",t[1]
         result = chooseResult(t[0],t[1])
         print "\tchose:", result
-        if True:#result is not None:
+        if result is not None:
             sprites.update({'hash':t[2]},
                             {'values':{'$set':result}
                         })
