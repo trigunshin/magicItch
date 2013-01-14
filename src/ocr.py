@@ -37,7 +37,6 @@ def chooseResult(first, second, verbose=False):
         return validateOCR(insertPeriod(second), verbose)
     #nothing had length or converted
     return None
-    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run OCR on downloaded sprite files.')
@@ -68,8 +67,7 @@ if __name__ == '__main__':
     popen = subprocess.check_output(["/bin/bash", ocrScript, spriteDir]).split('\n')[:-1]
     triple = [line.split('|') for line in popen]
     for t in triple:
-        print "hash:", t[2]
-        print "\tthings:",t[0],"|",t[1]
+        print "hash:", t[2],":",t[0],"|",t[1]
         result = chooseResult(t[0],t[1])
         print "\tchose:", result
         if True:#result is not None:
