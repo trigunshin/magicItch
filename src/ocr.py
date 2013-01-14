@@ -13,7 +13,7 @@ def validateOCR(aResult,verbose=False):
         try:
             if check[aResult[i]]:
                 if verbose: print "had result",aResult[i],"at",i," quitting"
-                print check
+                #print check
                 return None
         except KeyError,e:
             check[aResult[i]] = True
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         print "\tchose:", result
         if result is not None:
             sprites.update({'hash':t[2]},
-                            {'values':{'$set':result}
+                            {'$set':{'values':result}
                         })
             code = subprocess.call(["mv", spriteDir+str(t[2])+".png", spriteDir+"done/"])
             if not code == 0: print "error moving hashfile",spriteDir+str(t[2])+".png","to",spriteDir+"done/"
