@@ -19,7 +19,7 @@ do
     TEXT=`cat $hash.txt | paste -s -d '|'`
     TEXT="$TEXT$hash"
     echo $TEXT
-    echo $TEXT >>$hash.txt
+    #echo $TEXT >>$hash.txt
     #mv "$hash.png" "done"
-    #rm "$hash.txt"
+    rm "$hash.txt"
 done
