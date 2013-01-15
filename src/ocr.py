@@ -67,8 +67,10 @@ if __name__ == '__main__':
     popen = subprocess.check_output(["/bin/bash", ocrScript, spriteDir]).split('\n')[:-1]
     triple = [line.split('|') for line in popen]
     for t in triple:
-        print "hash:", t[2],":",t[0],"|",t[1]
-        result = chooseResult(t[0],t[1])
+        first = t[0].replace(" ","")
+        second = t[1].replace(" ","")
+        print "hash:", t[2],":",first,"|",second
+        result = chooseResult(first, second)
         print "\tchose:", result
         if result is not None:
             sprites.update({'hash':t[2]},
@@ -76,6 +78,6 @@ if __name__ == '__main__':
                         }, upsert=True)
             code = subprocess.call(["mv", spriteDir+str(t[2])+".png", spriteDir+"done/"])
             if not code == 0: print "error moving hashfile",spriteDir+str(t[2])+".png","to",spriteDir+"done/"
-        #print "ocr_top:",validateOCR(t[0])
-        #print "ocr_bot:",validateOCR(t[1])
+        #print "ocr_top:",validateOCR(first)
+        #print "ocr_bot:",validateOCR(second)
     
