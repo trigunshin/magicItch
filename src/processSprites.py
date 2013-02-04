@@ -84,14 +84,13 @@ if __name__ == '__main__':
     for cur in glob.iglob(imageDir + '*.png'):
         print "cur path:",cur
         imageHash = cur.split('/')[-1].split('.')[0]
-        print "hash",imageHash
-        
+        chosen = None
         for convCall in conv.getNext(cur,imageHash):
             convertResult = subprocess.call(convCall)
             if not convertResult == 0:
                 #handle convert error
                 print "error on convert"
-            
+                break
             #tesseract creates a $imageHash.txt output file
             if not 0==subprocess.call(['tesseract', imageHash+'.tiff', imageHash, 'mitch']):
                 #handle tesseract error
@@ -99,12 +98,14 @@ if __name__ == '__main__':
                 break
             result = subprocess.check_output(['cat',imageHash+'.txt']).strip().split('\n')
             chosen = chooseResult(*result)
-            print "\tchose:", result
+            print "\tchose:", chosen
             subprocess.check_output(['rm',imageHash+'.txt'])
             subprocess.check_output(['rm',imageHash+'.tiff'])
             if chosen is not None:
                 if debug is False:
                     sprites.update({'hash':imageHash},{'$set':{'values':chosen}}, upsert=True)
-                    code = subprocess.call(["mv", spriteDir+imageHash+".png", spriteDir+"done/"])
-                    if not code == 0: print "error moving hashfile",spriteDir+imageHash+".png","to",spriteDir+"done/"
+                    code = subprocess.call(["mv", imageDir+imageHash+".png", imageDir+"done/"])
+                    if not code == 0: print "error moving hashfile",imageDir+imageHash+".png","to",imageDir+"done/"
                 break
+        if chosen is None:
+            print "failed to tesseract:",imageHash
