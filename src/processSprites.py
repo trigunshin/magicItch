@@ -39,14 +39,17 @@ def chooseResult(first, second, verbose=False):
 class ConvertCaller():
     def __init__(self):
         self.opts=[
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 638x364 -compress none $NAME.tiff',#effective
-            'convert $PATH -auto-level -resize 837x455 -compress none $NAME.tiff',#effective
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 638x364 -compress none $NAME.tiff',
+            'convert $PATH -auto-level -resize 648x364 -compress none $NAME.tiff',
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 837x455 -compress none $NAME.tiff',
+            'convert $PATH -auto-level -resize 837x455 -compress none $NAME.tiff',
             'convert $PATH -auto-level -resize 162x91 -compress none $NAME.tiff',
             'convert $PATH -auto-level -resize 243x137 -compress none $NAME.tiff',
             'convert $PATH -auto-level -resize 324x182 -compress none $NAME.tiff',
             'convert $PATH -auto-level -resize 486x273 -compress none $NAME.tiff',
-            'convert $PATH -auto-level -resize 648x364 -compress none $NAME.tiff',
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1296x728 -compress none $NAME.tiff',
             'convert $PATH -auto-level -resize 1296x728 -compress none $NAME.tiff',
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1458x819 -compress none $NAME.tiff',
             'convert $PATH -auto-level -resize 1458x819 -compress none $NAME.tiff'
         ]
         self.path="$PATH"
