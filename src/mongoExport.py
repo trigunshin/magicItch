@@ -1,82 +1,59 @@
-import pymongo
-from pymongo import Connection
+from pymongo import MongoClient
 from datetime import date
 import sys,csv,argparse,jsonpickle,math
 
-class scgImports(object):
-
-    def __init__(self, aDate, aStoreName, aDelimiter = ","):
+class ScgImports():
+    def __init__(self, aDate, aStoreName, spriteColl, aDelimiter = "\t"):
         self.delimiter = aDelimiter
+        self.sprites = spriteColl
+        self.spriteCache = {}
         self.datestring = aDate
         self.db = None
         self.setIndex = 0
         self.nameIndex = 1
         self.priceIndex = 2
         self.quantIndex = 3
+        self.rarityIndex = 4
+        self.hashIndex = 5
         self.storeName = aStoreName
 
-    def getReader(self, file):
-        return csv.reader(file, delimiter=self.delimiter)
-
+    def getReader(self, aFileObject):
+        return csv.reader(aFileObject, delimiter=self.delimiter)
+    
+    def parseFile(self, aFilePath):
+        with open(aFilePath, 'r') as f:
+            reader=self.getReader(f)
+            for row in reader:
+                name = row[self.nameIndex]
+                setName = row[self.setIndex]
+                spriteHash = row[self.hashIndex]
+                quant = self.hashParse(row[self.quantIndex], spriteHash)
+                price = self.hashParse(row[self.priceIndex], spriteHash)
+                #rarity = row[self.rarityIndex]
+                yield {"name":name,"set":setName,"store":self.storeName,"quantity":quant,"price":price,"date":self.datestring}
+    
+    """
     def updatePriceListings(self, aFile, collection):
         with open(aFile, 'rb') as f:
             reader = self.getReader(f)
             for row in reader:
                 name = row[self.nameIndex]
-                set = row[self.setIndex]
+                setName = row[self.setIndex]
                 quant = row[self.quantIndex]
                 price = self.parsePrice(row[self.priceIndex])
-                val = [{"name":name,"set":set,"store":self.storeName,"quantity":quant,"price":price,"date":self.datestring}]
+                val = [{"name":name,"set":setName,"store":self.storeName,"quantity":quant,"price":price,"date":self.datestring}]
                 collection.insert(val)
-
-    def parsePrice(self, aPriceString):
-        a = aPriceString.replace('$', '')
-        a = a.replace('.', '')
-        a = a.replace(',', '')
-        return a
-
-class PriceReport(object):
-
-    def __init__(self, start, end):
-        self.set = start['set']
-        self.store = start['store']
-        self.name = start['name']
-        self.start = start['date']
-        self.end = end['date']
-        self.priceChange = self.getDiff(start['price'], end['price'])
-        self.quantChange = self.getDiff(start['quantity'],end['quantity'])
-        self.startPrice = start['price']
-        self.endPrice = end['price']
-        self.startQuant = start['quantity']
-        self.endQuant = end['quantity']
-
-    def getDiff(self, start, end):
-        startval=start
-        endval=end
-        if startval == 'None':
-            startval= 0
-        if endval == 'None':
-            endval = 0
-        diff = int(endval) - int(startval)
-        return diff
-
-    def toString(self):
-        return ''.join([`key`+":"+`value`+"," for key, value in self.__dict__.iteritems()])
-        
-def getSortKey(obj):
-    if obj is None:
-        return 0
-    return obj.priceChange
-
-def getReport(a,b):
-#    print a['name'],b['name']
-    if a['name']!=b['name']:
-        print "BRICKSHIT",a['name'],b['name']
-    report = PriceReport(a,b)
-    if report.priceChange == 0:
-        return None
-    return report
-
+    #"""
+    
+    def hashParse(self, toParse, aHash):
+        try:
+            spriteMap=self.spriteCache[aHash]
+        except KeyError,e:
+            #TODO this'll explode on a hash fail, but that's ok for now
+            spriteMap = self.sprites.find_one({'hash':aHash})['values']
+            self.spriteCache[aHash] = spriteMap
+        return ''.join([spriteMap[val] for val in toParse.split('|')])
+    
 if __name__ == '__main__':
     verbose = False
     datestring = None
@@ -86,7 +63,7 @@ if __name__ == '__main__':
     fullFileDirectory = "/Users/trigunshin/mtgPrice/scg/"
     storeName = "StarCity Games"
     #datestring = date.today().isoformat()
-
+    
     parser = argparse.ArgumentParser(description='Upload a scg Xsv file to the mongo db.')
     parser.add_argument('-f', required=True, help="Directory to find the file in")
     parser.add_argument('-d', required=False, help="Date to read data from. Currently only SCG supported if -n not used.")
@@ -95,9 +72,9 @@ if __name__ == '__main__':
     parser.add_argument('-c', action='store_true', help="Denote a CSV file")
     parser.add_argument('-s', required=False, help="Store name to use when storing file.")
 #    parser.add_argument('',required=false, help="
-
+    
     args = vars(parser.parse_args())
-
+    
     if args['t']:
         delimiter = "\t"
         fileSuffix = ".tsv"
@@ -116,28 +93,33 @@ if __name__ == '__main__':
 #        exit()
     if args['f'] != None:
         fullFileDirectory = args['f']
-
+    
     if fileName == None:
         fileName = "scg_"+datestring+fileSuffix
     fileToUse = fullFileDirectory + fileName
-
     print "Reading from:",fileToUse
-
-    c = Connection()
-    db = c['testCards']
+    
+    c = MongoClient()
+    db = c['cardData']
     coll = db['priceCollection']
-
-    imp = scgImports(datestring, storeName, delimiter)
+    sprites = db['sprites']
+    
+    imp = ScgImports(datestring, storeName, sprites, delimiter)
     
     dateQueryParam = {"date":datestring, "store":storeName}
     
     if coll.find(dateQueryParam).count() == 0:
+        results = imp.parseFile(fileToUse)
+        for result in results:
+            print result
+        """
         imp.updatePriceListings(fileToUse, coll)
         for post in coll.find(dateQueryParam).limit(2).sort("name"):
             print post
     else:
         count = coll.find(dateQueryParam).count()
         print count, "listings exist for that date!"
+    #"""
 #    print json.dumps([p.__dict__ for p in ])
 #    print jsonpickle.encode(imp)
 #    print args
