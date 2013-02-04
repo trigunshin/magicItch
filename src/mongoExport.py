@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from datetime import date
-import sys,csv,argparse,jsonpickle,math
+import sys,csv,argparse,math
 
 class ScgImports():
     def __init__(self, aDate, aStoreName, spriteColl, aDelimiter = "\t"):
@@ -46,13 +46,18 @@ class ScgImports():
     #"""
     
     def hashParse(self, toParse, aHash):
+        if toParse == "None": return "None"
+        #print toParse
         try:
-            spriteMap=self.spriteCache[aHash]
-        except KeyError,e:
-            #TODO this'll explode on a hash fail, but that's ok for now
-            spriteMap = self.sprites.find_one({'hash':aHash})['values']
-            self.spriteCache[aHash] = spriteMap
-        return ''.join([spriteMap[val] for val in toParse.split('|')])
+            try:
+                spriteMap=self.spriteCache[aHash]
+            except KeyError,e:
+                #TODO this'll explode on a hash fail, but that's ok for now
+                spriteMap = self.sprites.find_one({'hash':aHash})['values']
+                self.spriteCache[aHash] = spriteMap
+            return ''.join([spriteMap[val] for val in toParse.split('|')])
+        except TypeError,e:
+            raise Exception("Hash data not found:"+aHash)
     
 if __name__ == '__main__':
     verbose = False
@@ -121,7 +126,6 @@ if __name__ == '__main__':
         print count, "listings exist for that date!"
     #"""
 #    print json.dumps([p.__dict__ for p in ])
-#    print jsonpickle.encode(imp)
 #    print args
 #    print [str(args[a])+str(1) for a in args]
 #        print a
