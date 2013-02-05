@@ -101,6 +101,7 @@ if __name__ == '__main__':
                 print "tess error"
                 break
             result = subprocess.check_output(['cat',imageHash+'.txt']).strip().split('\n')
+            print "\tresult:",result
             chosen = chooseResult(*result)
             print "\tchose:", chosen
             subprocess.check_output(['rm',imageHash+'.txt'])
