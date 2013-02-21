@@ -100,7 +100,7 @@ if __name__ == '__main__':
                 #handle tesseract error
                 print "tess error"
                 break
-            result = subprocess.check_output(['cat',imageHash+'.txt']).replace(' ','').split('\n')
+            result = subprocess.check_output(['cat',imageHash+'.txt']).strip().replace(' ','').split('\n')
             print "\tresult:",result
             chosen = chooseResult(*result)
             print "\tchose:", chosen
