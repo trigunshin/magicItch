@@ -39,28 +39,29 @@ def chooseResult(first, second, verbose=False):
 class ConvertCaller():
     def __init__(self):
         self.opts=[
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 638x364 -compress none $NAME.tiff',
-            'convert $PATH -auto-level -resize 648x364 -compress none $NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 837x455 -compress none $NAME.tiff',
-            'convert $PATH -auto-level -resize 837x455 -compress none $NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 162x91 -compress none $NAME.tiff',
-            'convert $PATH -auto-level -resize 162x91 -compress none $NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 243x137 -compress none $NAME.tiff',
-            'convert $PATH -auto-level -resize 243x137 -compress none $NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 324x182 -compress none $NAME.tiff',
-            'convert $PATH -auto-level -resize 324x182 -compress none $NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1296x728 -compress none $NAME.tiff',
-            'convert $PATH -auto-level -resize 486x273 -compress none $NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1458x819 -compress none $NAME.tiff',
-            'convert $PATH -auto-level -resize 1296x728 -compress none $NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1458x819 -compress none $NAME.tiff',
-            'convert $PATH -auto-level -resize 1458x819 -compress none $NAME.tiff'
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 638x364 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -auto-level -resize 648x364 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 837x455 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -auto-level -resize 837x455 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 162x91 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -auto-level -resize 162x91 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 243x137 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -auto-level -resize 243x137 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 324x182 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -auto-level -resize 324x182 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1296x728 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -auto-level -resize 486x273 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -auto-level -resize 1296x728 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff',
+            'convert $PATH -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff'
         ]
         self.path="$PATH"
         self.name="$NAME"
-    def getNext(self,path,name):
+        self.directory="$DIRECTORY"
+    def getNext(self, fileDirectory, filePath, fileHash):
         for cur in self.opts:
-            yield cur.replace(self.path,path).replace(self.name,name).split(' ')
+            yield cur.replace(self.path,filePath).replace(self.directory,fileDirectory).replace(self.name,fileHash).split(' ')
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run OCR with varying arguments over sprite files.')
@@ -86,10 +87,12 @@ if __name__ == '__main__':
     
     conv = ConvertCaller()
     for cur in glob.iglob(imageDir + '*.png'):
-        print "cur path:",cur
-        imageHash = cur.split('/')[-1].split('.')[0]
+        print "cur image path:",cur
+        curSplitArr = cur.split('/')
+        dirString = '/'.join(curSplitArr[:-1])+'/'
+        imageHash = curSplitArr[-1].split('.')[0]
         chosen = None
-        for convCall in conv.getNext(cur,imageHash):
+        for convCall in conv.getNext(dirString,cur,imageHash):
             convertResult = subprocess.call(convCall)
             if not convertResult == 0:
                 #handle convert error
