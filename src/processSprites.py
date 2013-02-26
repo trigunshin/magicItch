@@ -99,16 +99,16 @@ if __name__ == '__main__':
                 print "error on convert"
                 break
             #tesseract creates a $imageHash.txt output file
-            if not 0==subprocess.call(['tesseract', imageHash+'.tiff', imageHash, 'mitch']):
+            if not 0==subprocess.call(['tesseract', dirString+imageHash+'.tiff', imageHash, 'mitch']):
                 #handle tesseract error
                 print "tess error"
                 break
-            result = subprocess.check_output(['cat',imageHash+'.txt']).strip().replace(' ','').split('\n')
+            result = subprocess.check_output(['cat',dirString+imageHash+'.txt']).strip().replace(' ','').split('\n')
             print "\tresult:",result
             chosen = chooseResult(*result)
             print "\tchose:", chosen
-            subprocess.check_output(['rm',imageHash+'.txt'])
-            subprocess.check_output(['rm',imageHash+'.tiff'])
+            subprocess.check_output(['rm',dirString+imageHash+'.txt'])
+            subprocess.check_output(['rm',dirString+imageHash+'.tiff'])
             if chosen is not None:
                 if debug is False:
                     sprites.update({'hash':imageHash},{'$set':{'values':chosen}}, upsert=True)
@@ -116,4 +116,4 @@ if __name__ == '__main__':
                     if not code == 0: print "error moving hashfile",imageDir+imageHash+".png","to",imageDir+"done/"
                 break
         if chosen is None:
-            print "failed to tesseract:",imageHash
+            print "failed to tesseract:",dirString+imageHash
