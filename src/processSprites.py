@@ -99,7 +99,7 @@ if __name__ == '__main__':
                 print "error on convert"
                 break
             #tesseract creates a $imageHash.txt output file
-            if not 0==subprocess.call(['tesseract', dirString+imageHash+'.tiff', imageHash, 'mitch']):
+            if not 0==subprocess.call(['tesseract', dirString+imageHash+'.tiff', dirString+imageHash, 'mitch']):
                 #handle tesseract error
                 print "tess error"
                 break
@@ -117,3 +117,4 @@ if __name__ == '__main__':
                 break
         if chosen is None:
             print "failed to tesseract:",dirString+imageHash
+
