@@ -39,22 +39,22 @@ def chooseResult(first, second, verbose=False):
 class ConvertCaller():
     def __init__(self):
         self.opts=[
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 638x364 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -auto-level -resize 648x364 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 837x455 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -auto-level -resize 837x455 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 162x91 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -auto-level -resize 162x91 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 243x137 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -auto-level -resize 243x137 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 324x182 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -auto-level -resize 324x182 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1296x728 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -auto-level -resize 486x273 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -auto-level -resize 1296x728 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -despeckle -threshold 50% -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff',
-            'convert $PATH -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff'
+            ['convert $PATH -despeckle -threshold 50% -auto-level -resize 638x364 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -auto-level -resize 648x364 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -despeckle -threshold 50% -auto-level -resize 837x455 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -auto-level -resize 837x455 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -despeckle -threshold 50% -auto-level -resize 162x91 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -auto-level -resize 162x91 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -despeckle -threshold 50% -auto-level -resize 243x137 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -auto-level -resize 243x137 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -despeckle -threshold 50% -auto-level -resize 324x182 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -auto-level -resize 324x182 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -despeckle -threshold 50% -auto-level -resize 1296x728 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -auto-level -resize 486x273 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -despeckle -threshold 50% -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -auto-level -resize 1296x728 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -despeckle -threshold 50% -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff'],
+            ['convert $PATH -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff']
         ]
         self.hardmode = [
             'convert $PATH -crop 81x46-18+0 -despeckle -threshold 50% -auto-level -resize 324x182 -compress none $DIRECTORY1.tiff',
@@ -63,7 +63,7 @@ class ConvertCaller():
             'rm $DIRECTORY1.tiff',
             'rm $DIRECTORY2.tiff'
         ]
-        self.opts.append(';'.join(self.hardmode))
+        self.opts.append(self.hardmode)
         
         self.path="$PATH"
         self.name="$NAME"
@@ -101,12 +101,13 @@ if __name__ == '__main__':
         dirString = '/'.join(curSplitArr[:-1])+'/'
         imageHash = curSplitArr[-1].split('.')[0]
         chosen = None
-        for convCall in conv.getNext(dirString,cur,imageHash):
-            convertResult = subprocess.call(convCall)
-            if not convertResult == 0:
-                #handle convert error
-                print "error on convert"
-                break
+        for convCalls in conv.getNext(dirString,cur,imageHash):
+            for curCall in convCalls:
+                convertResult = subprocess.call(curCall)
+                if not convertResult == 0:
+                    #handle convert error
+                    print "error on convert"
+                    break
             #tesseract creates a $imageHash.txt output file
             if not 0==subprocess.call(['tesseract', dirString+imageHash+'.tiff', dirString+imageHash, 'mitch']):
                 #handle tesseract error
