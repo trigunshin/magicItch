@@ -102,16 +102,18 @@ if __name__ == '__main__':
     
     dateQueryParam = {"date":datestring, "store":storeName}
     
-    if coll.find(dateQueryParam).count() == 0:
+    if test_flag:
         results = imp.parseFile(fileToUse)
-        if test_flag:
-            for result in results:
-                print result
-        else:
-            coll.insert(results)
-            for post in coll.find(dateQueryParam).limit(2).sort("name"):
-                print post
+        for result in results:
+            print result
     else:
-        count = coll.find(dateQueryParam).count()
-        print count, "listings exist for that date!"
+        if coll.find(dateQueryParam).count() == 0:
+            results = imp.parseFile(fileToUse)
+            else:
+                coll.insert(results)
+                for post in coll.find(dateQueryParam).limit(2).sort("name"):
+                    print post
+        else:
+            count = coll.find(dateQueryParam).count()
+            print count, "listings exist for that date!"
     
