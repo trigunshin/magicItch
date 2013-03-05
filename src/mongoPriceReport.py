@@ -1,7 +1,7 @@
 import pymongo
 from pymongo import Connection
 from bintrees import AVLTree
-import sys,argparse,jsonpickle,math
+import sys,argparse,math
 from time import time,clock
 
 class PriceReport(object):
@@ -195,6 +195,5 @@ if __name__ == '__main__':
                 if humanFormat:
                     f.write(result.toHumanString())
                 else:
-                    #f.write(jsonpickle.encode(result))
                     f.write(result.toCSVString())
                 f.write("\r\n")
