@@ -70,7 +70,8 @@ class ConvertCaller():
         self.directory="$DIRECTORY"
     def getNext(self, fileDirectory, filePath, fileHash):
         for cur in self.opts:
-            yield cur.replace(self.path,filePath).replace(self.directory,fileDirectory).replace(self.name,fileHash).split(' ')
+            yield (curCall.replace(self.path,filePath).replace(self.directory,fileDirectory).replace(self.name,fileHash).split(' ') for curCall in cur)
+            #yield cur.replace(self.path,filePath).replace(self.directory,fileDirectory).replace(self.name,fileHash).split(' ')
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run OCR with varying arguments over sprite files.')
