@@ -32,19 +32,6 @@ class ScgImports():
                 #rarity = row[self.rarityIndex]
                 yield {"name":name,"set":setName,"store":self.storeName,"quantity":quant,"price":price,"date":self.datestring}
     
-    """
-    def updatePriceListings(self, aFile, collection):
-        with open(aFile, 'rb') as f:
-            reader = self.getReader(f)
-            for row in reader:
-                name = row[self.nameIndex]
-                setName = row[self.setIndex]
-                quant = row[self.quantIndex]
-                price = self.parsePrice(row[self.priceIndex])
-                val = [{"name":name,"set":setName,"store":self.storeName,"quantity":quant,"price":price,"date":self.datestring}]
-                collection.insert(val)
-    #"""
-    
     def hashParse(self, toParse, aHash):
         if toParse == "None": return "None"
         #print toParse
@@ -67,6 +54,7 @@ if __name__ == '__main__':
     fileName = None
     fullFileDirectory = "/Users/trigunshin/mtgPrice/scg/"
     storeName = "StarCity Games"
+    test_flag = False
     #datestring = date.today().isoformat()
     
     parser = argparse.ArgumentParser(description='Upload a scg Xsv file to the mongo db.')
@@ -75,8 +63,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', required=False, help="File name to read data from")
     parser.add_argument('-t', action='store_true', help="Denote a TSV file")
     parser.add_argument('-c', action='store_true', help="Denote a CSV file")
+    parser.add_argument('-z', action='store_true', help="Test Mode. Will print results to stdout instead of storing in Mongo")
     parser.add_argument('-s', required=False, help="Store name to use when storing file.")
-#    parser.add_argument('',required=false, help="
     
     args = vars(parser.parse_args())
     
@@ -90,14 +78,15 @@ if __name__ == '__main__':
         storeName = args['s']
     if args['d'] != None:
         datestring = args['d']
-#        fileName = "scg_"+datestring+fileSuffix
-    if args['n'] != None:
+        fileName = "scg_"+datestring+fileSuffix
+    elif args['n'] != None:
         fileName = args['n']
-#    else:
-#        print "Date or name required!"
-#        exit()
+    else:
+        print "Date or name required!"
+        exit()
     if args['f'] != None:
         fullFileDirectory = args['f']
+    if args['z']: test_flag = True
     
     if fileName == None:
         fileName = "scg_"+datestring+fileSuffix
@@ -115,17 +104,14 @@ if __name__ == '__main__':
     
     if coll.find(dateQueryParam).count() == 0:
         results = imp.parseFile(fileToUse)
-        for result in results:
-            print result
-        """
-        imp.updatePriceListings(fileToUse, coll)
-        for post in coll.find(dateQueryParam).limit(2).sort("name"):
-            print post
+        if test_flag:
+            for result in results:
+                print result
+        else:
+            coll.insert(results)
+            for post in coll.find(dateQueryParam).limit(2).sort("name"):
+                print post
     else:
         count = coll.find(dateQueryParam).count()
         print count, "listings exist for that date!"
-    #"""
-#    print json.dumps([p.__dict__ for p in ])
-#    print args
-#    print [str(args[a])+str(1) for a in args]
-#        print a
+    
