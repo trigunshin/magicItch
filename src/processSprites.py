@@ -56,6 +56,15 @@ class ConvertCaller():
             'convert $PATH -despeckle -threshold 50% -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff',
             'convert $PATH -auto-level -resize 1458x819 -compress none $DIRECTORY$NAME.tiff'
         ]
+        self.hardmode = [
+            'convert $PATH -crop 81x46-18+0 -despeckle -threshold 50% -auto-level -resize 324x182 -compress none $DIRECTORY1.tiff',
+            'convert $PATH -crop 81x46+66+0 -crop 81x46-6+0 -despeckle -threshold 50% -auto-level -resize 324x182 -compress none $DIRECTORY2.tiff',
+            'convert +append $DIRECTORY1.tiff $DIRECTORY2.tiff $DIRECTORY$NAME.tiff',
+            'rm $DIRECTORY1.tiff',
+            'rm $DIRECTORY2.tiff'
+        ]
+        self.opts.append(';'.join(self.hardmode))
+        
         self.path="$PATH"
         self.name="$NAME"
         self.directory="$DIRECTORY"
