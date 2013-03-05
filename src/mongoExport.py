@@ -109,10 +109,9 @@ if __name__ == '__main__':
     else:
         if coll.find(dateQueryParam).count() == 0:
             results = imp.parseFile(fileToUse)
-            else:
-                coll.insert(results)
-                for post in coll.find(dateQueryParam).limit(2).sort("name"):
-                    print post
+            coll.insert(results)
+            for post in coll.find(dateQueryParam).limit(2).sort("name"):
+                print post
         else:
             count = coll.find(dateQueryParam).count()
             print count, "listings exist for that date!"
