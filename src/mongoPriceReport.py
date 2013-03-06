@@ -3,9 +3,9 @@ from pymongo import Connection
 from bintrees import AVLTree
 import sys,argparse,math
 from time import time,clock
+from datetime import date, timedelta
 
 class PriceReport(object):
-
     def __init__(self, start, end):
         self.set = start['set']
         self.store = start['store']
@@ -63,12 +63,12 @@ class PriceReport(object):
             p + " with a quantity change of " + str(self.quantChange) + " to " + str(self.endQuant) + "."
 
 class ReportGenerator(object):
-    def __init__(self,cardDataColl,start,end,store,filter):
+    def __init__(self,cardDataColl,start,end,store,report_filter):
         self.storeName = store
         self.startDate = start
         self.endDate = end
         self.cardDataColl = cardDataColl
-        if not filter:
+        if not report_filter:
             self.reportFilter = self.priceChange
         else:
             self.reportFilter = self.quantChange
@@ -114,35 +114,40 @@ class ReportGenerator(object):
 #            return None
         return report
 
-def priceReport(cardDataColl, reportDataColl, startDate,endDate,outputLocation=None,quantityFilterFlag=False,storeName="StarCity Games",verbose=False,debug=False):
-    #outputLocation = outputDir + filename
-    print "Outputting data to: ", outputLocation
+def getDataDict(aDiffResult):
+    return {"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}
+
+#XXX still needs some style love
+def priceReport(cardDataColl,reportDataColl,startDate=None,endDate=None,outputDir=None,quantityFilterFlag=False,storeName="StarCity Games",storeShort='scg',humanFormat=True,verbose=False,debug=False):
+    if endDate is None: endDate = date.today().strftime('%Y-%m-%d')
+    if startDate is None: startDate = (date.today() - timedelta(days=1)).strftime('%Y-%m-%d')
+    if filename is None: filename = storeShort.replace(' ','')+startDate+"_"+endDate+".tsv"
+    outputLocation = outputDir + filename
+    if verbose: print "Outputting data to: ", outputLocation
     
-    gen = ReportGenerator(cardDataColl, startDate, endDate, storeName, filterQuantity)
+    ret = {}
+    ret['report_file_path']=outputLocation
+    ret['start_date']=startDate
+    ret['end_date']=endDate
+    
+    
+    gen = ReportGenerator(cardDataColl, startDate, endDate, storeName, quantityFilterFlag)
     diffs = gen.generate()
     
     if outputLocation is None:
-        for result in diffs:
-            print result.toString()
-            diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
-            #print diff
-            reportDataColl.insert(diff)
+        reportDataColl.insert([getDataDict(result) for result in diffs])
     else:
         with open(outputLocation, 'w') as f:
             if not humanFormat:
                 f.write(diffs[0].getCSVHeader())
                 f.write("\r\n")
             for result in diffs:
-                #f.write(result.toString())
-                #print diff
-                if sendDB:
-                    diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
-                    reportDataColl.insert(diff)
                 if humanFormat:
                     f.write(result.toHumanString())
                 else:
                     f.write(result.toCSVString())
                 f.write("\r\n")
+    return ret
 
 if __name__ == '__main__':
     storeName = "StarCity Games"

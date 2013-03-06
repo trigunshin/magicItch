@@ -1,8 +1,11 @@
 import sys,os,traceback
 from datetime import date
+
 from sprites import outsideIn
 from processSprites import processSprites
 from mongoExport import spliceSpriteData
+from mongoPriceReport import priceReport
+
 from pymongo import MongoClient
 from functools import partial
 from kombu import Connection, Exchange, Queue
@@ -112,12 +115,14 @@ if __name__ == "__main__":
     dbName = "cardData"
     spriteCollName = "sprites"
     cardDataCollName = "cardData"
+    reportDataCollName = "reports"
     
     HOMEDIR="/home/pcrane/"
     DEVDIR=HOMEDIR+"dev/"
     ITCHDIR=DEVDIR+"magicItch/"
     SRCDIR=ITCHDIR+"src/"
     SCG_DATA_DIR=ITCHDIR+"scg_data/"
+    DAILY_REPORT_DIR=ITCHDIR+"daily/"
     SPRITE_DIR=ITCHDIR+"sprites/"
     LOGDIR=HOMEDIR+"logs/magicItch/"
     SPRITE_MAP_FILE=SRCDIR+"ocr_map.csv"
@@ -130,6 +135,7 @@ if __name__ == "__main__":
     db=mCli[dbName]
     spriteColl=db[spriteCollName]
     cardDataColl=db[cardDataCollName]
+    reportDataColl=db[reportDataCollName]
     
     try:
         print "Connecting to ",connection_string,"..."
@@ -139,13 +145,15 @@ if __name__ == "__main__":
         scgDownload = partial(outsideIn,spriteColl,fullFileDirectory=SCG_DATA_DIR,mappingFilePath=SPRITE_MAP_FILE,spriteFilePath=SPRITE_DIR,delimiter=DELIMITER,verbose=verbose_flag,debug=debug_flag)
         spriteProcess = partial(processSprites,spriteColl,spriteDir=SPRITE_DIR,verbose=verbose_flag,debug=debug_flag)
         dataGenerate = partial(spliceSpriteData,spriteColl,cardDataColl,dataDirectory=SCG_DATA_DIR,datestring=None,storeName="StarCity Games", delimiter=DELIMITER,verbose=verbose_flag,debug=debug_flag)
+        reportArgs={startDate=None,endDate=None,outputDir=DAILY_REPORT_DIR,quantityFilterFlag=False,storeName="StarCity Games",storeShort="scg",humanFormat=True,verbose=verbose_flag,debug=debug_flag}
+        runPriceReport = partial(priceReport,cardDataColl,reportDataColl,**reportArgs)
         
         hello_wrapped = wrapCall(conn, hello_task, "hello_task_success","hello_task_error")
         #scgDownload = wrapCall(conn, scgDownload, 'scg_download_success','scg_download_error')
         spriteProcess = wrapCall(conn, spriteProcess, 'process_sprites_success','process_sprites_error')
         dataGenerate = wrapCall(conn, dataGenerate, 'process_data_success','process_data_error')
+        reportGenerate = wrapCall(conn, runPriceReport, 'run_report_success','run_report_error')
         
-        #print SCG_DATA_DIR + 'scg_' + date.today().isoformat()+'.tsv'
         taskMap = {
           'hello_task':hello_task,
           'hello_task_success':hello_task,
@@ -161,8 +169,12 @@ if __name__ == "__main__":
           'process_sprites_error':hello_task,
           
           'process_data':dataGenerate,
-          'process_data_success':hello_task,
-          'process_data_error':hello_task
+          'process_data_success':reportGenerate,
+          'process_data_error':hello_task,
+          
+          'run_report':reportGenerate,
+          'run_report_success':hello_task,
+          'run_report_error':hello_task
         }
         #"""
         if sys.argv[0].startswith("python"):
