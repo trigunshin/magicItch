@@ -1,4 +1,5 @@
-import sys,os
+import sys,os,traceback
+from datetime import date
 from sprites import outsideIn
 from processSprites import processSprites
 from mongoExport import spliceSpriteData
@@ -19,7 +20,7 @@ task_queues = [Queue('itch', task_exchange, routing_key='itch')]
 
 def hello_task(**varargs):
     for k,v in varargs.iteritems():
-        print k,"||",v
+        print '\t',k,"||",v
 
 def send_as_task(connection, fun, args=(), kwargs={}, priority='itch'):
     payload = {'fun': fun, 'args': args, 'kwargs': kwargs}
@@ -31,7 +32,8 @@ def send_as_task(connection, fun, args=(), kwargs={}, priority='itch'):
 def run_producer(conn):
     print "Sending tasks ..."
     #send_as_task(conn, fun=hello_task.__name__, args=[], kwargs={'who':'Kombu'}, priority='itch')
-    send_as_task(conn, fun='hello_test', args=[], kwargs={}, priority='itch')
+    #send_as_task(conn, fun='hello_test', args=[], kwargs={}, priority='itch')
+    send_as_task(conn, fun='process_sprites', args=[], kwargs={}, priority='itch')
 
 class Worker(ConsumerMixin):
     def __init__(self, connection, taskmap=None):
@@ -47,11 +49,11 @@ class Worker(ConsumerMixin):
         fun = self.taskMap[body['fun']]
         args = body['args']
         kwargs = body['kwargs']
-        print 'Got task:', body['fun'], args, kwargs
+        print 'Got task:', body['fun']#, args, kwargs
         try:
             result = fun(*args, **kwdict(kwargs))
-            print 'Result:'#print fun.__name__,result
             if result:
+                print 'Result:'#print fun.__name__,result
                 for cur in result:
                     print "\t",cur
         except Exception, exc:
@@ -72,12 +74,13 @@ def wrapCall(conn, func, success_msg, err_msg):
         try:
             ret = func(*fargs, **fkeywords)
             #fire successMsg
-            send_as_task(conn,success_msg,[],{'test':'success'},priority='itch')
+            send_as_task(conn,success_msg,[],{},priority='itch')
             return ret
         except Exception,e:
             print e
             #fire rabbit w/errMsg
-            send_as_task(conn,err_msg,[],{'test':'failed','err':str(e)},priority='itch')
+            argd={'err':str(e),'trace':traceback.format_exc()}
+            send_as_task(conn,err_msg,[],argd,priority='itch')
             raise e
     newfunc.func = func
     return newfunc
@@ -138,9 +141,10 @@ if __name__ == "__main__":
         
         hello_wrapped = wrapCall(conn, hello_task, "hello_task_success","hello_task_error")
         #scgDownload = wrapCall(conn, scgDownload, 'scg_download_success','scg_download_error')
-        #spriteProcess = wrapCall(conn, spriteProcess, 'process_sprites_success','process_sprites_error')
-        #dataGenerate = wrapCall(conn, dataGenerate, 'process_data_success','process_data_error')
+        spriteProcess = wrapCall(conn, spriteProcess, 'process_sprites_success','process_sprites_error')
+        dataGenerate = wrapCall(conn, dataGenerate, 'process_data_success','process_data_error')
         
+        #print SCG_DATA_DIR + 'scg_' + date.today().isoformat()+'.tsv'
         taskMap = {
           'hello_task':hello_task,
           'hello_task_success':hello_task,
