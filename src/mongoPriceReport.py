@@ -67,7 +67,7 @@ class ReportGenerator(object):
         self.storeName = store
         self.startDate = start
         self.endDate = end
-        self.dbName = 'testCards'
+        self.dbName = 'cardData'
         self.collName = 'priceCollection'
         if not filter:
             self.reportFilter = self.priceChange
