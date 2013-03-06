@@ -73,11 +73,30 @@ class ReportGenerator(object):
         else:
             self.reportFilter = self.quantChange
     
+    def gen(self):
+        ret = []
+        for curSet in self.cardDataColl.distinct("set"):
+            start = self.cardDataColl.find({"store":self.storeName, "date":self.startDate, "set":curSet}).sort("name",1)
+            end = self.cardDataColl.find({"store":self.storeName, "date":self.endDate, "set":curSet}).sort("name",1)
+            cardDict = {}
+            for cur in start:
+                cardDict[cur['name']] = cur
+            
+            for cur in end:
+                try:
+                    first_val = cardDict[cur['name']
+                    report = self.getReport(first_val, cur)
+                    if report is not None: ret.append(report)
+                except KeyError:
+                    pass
+        return sorted(ret, reverse=True,key=lambda pricereport: math.fabs(pricereport.priceChange))
+        
+    
     def generate(self):
         fullResultSet = []
         for currSet in self.cardDataColl.distinct("set"):
-            start = self.cardDataColl.find({"store":self.storeName, "date":self.startDate, "set":currSet}).sort("name")
-            end = self.cardDataColl.find({"store":self.storeName, "date":self.endDate, "set":currSet}).sort("name")
+            start = self.cardDataColl.find({"store":self.storeName, "date":self.startDate, "set":currSet}).sort("name",1)
+            end = self.cardDataColl.find({"store":self.storeName, "date":self.endDate, "set":currSet}).sort("name",1)
             startTree = self.getTree(start)
             endTree = self.getTree(end)
             result = self.getTreeResult(startTree,endTree)
@@ -132,7 +151,7 @@ def priceReport(cardDataColl,reportDataColl,startDate=None,endDate=None,outputDi
     ret['end_date']=endDate
     
     gen = ReportGenerator(cardDataColl, startDate, endDate, storeName, quantityFilterFlag)
-    diffs = gen.generate()
+    diffs = gen.gen()
     
     if outputLocation is None:
         reportDataColl.insert([getDataDict(result) for result in diffs])
