@@ -145,7 +145,7 @@ if __name__ == "__main__":
         scgDownload = partial(outsideIn,spriteColl,fullFileDirectory=SCG_DATA_DIR,mappingFilePath=SPRITE_MAP_FILE,spriteFilePath=SPRITE_DIR,delimiter=DELIMITER,verbose=verbose_flag,debug=debug_flag)
         spriteProcess = partial(processSprites,spriteColl,spriteDir=SPRITE_DIR,verbose=verbose_flag,debug=debug_flag)
         dataGenerate = partial(spliceSpriteData,spriteColl,cardDataColl,dataDirectory=SCG_DATA_DIR,datestring=None,storeName="StarCity Games", delimiter=DELIMITER,verbose=verbose_flag,debug=debug_flag)
-        reportArgs={startDate=None,endDate=None,outputDir=DAILY_REPORT_DIR,quantityFilterFlag=False,storeName="StarCity Games",storeShort="scg",humanFormat=True,verbose=verbose_flag,debug=debug_flag}
+        reportArgs={'startDate':None,'endDate':None,'outputDir':DAILY_REPORT_DIR,'quantityFilterFlag':False,'storeName':"StarCity Games",'storeShort':"scg",'humanFormat':True,'verbose':verbose_flag,'debug':debug_flag}
         runPriceReport = partial(priceReport,cardDataColl,reportDataColl,**reportArgs)
         
         hello_wrapped = wrapCall(conn, hello_task, "hello_task_success","hello_task_error")
