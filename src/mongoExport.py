@@ -92,7 +92,7 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Upload a scg Xsv file to the mongo db.')
     parser.add_argument('-f', required=True, help="Directory to find the file in")
-    parser.add_argument('-d', required=False, help="Date to read data from. Currently only SCG supported if -n not used.")
+    parser.add_argument('-d', required=True, help="Date to read data from. Currently only SCG supported if -n not used.")
     parser.add_argument('-n', required=False, help="File name to read data from")
     parser.add_argument('-t', action='store_true', help="Denote a TSV file")
     parser.add_argument('-c', action='store_true', help="Denote a CSV file")
@@ -111,12 +111,8 @@ if __name__ == '__main__':
         storeName = args['s']
     if args['d'] != None:
         datestring = args['d']
-        fileName = "scg_"+datestring+fileSuffix
-    elif args['n'] != None:
+    if args['n'] != None:
         fileName = args['n']
-    else:
-        print "Date or name required!"
-        exit()
     if args['f'] != None:
         fullFileDirectory = args['f']
     if args['z']: test_flag = True
@@ -125,7 +121,7 @@ if __name__ == '__main__':
         fileName = "scg_"+datestring+fileSuffix
     fileToUse = fullFileDirectory + fileName
     print "Reading from:",fileToUse
-    
+    #"""
     c = MongoClient()
     db = c['cardData']
     coll = db['priceCollection']
@@ -134,7 +130,7 @@ if __name__ == '__main__':
     imp = ScgImports(datestring, storeName, sprites, delimiter)
     
     dateQueryParam = {"date":datestring, "store":storeName}
-    
+    print 'date query',dateQueryParam
     if test_flag:
         results = imp.parseFile(fileToUse)
         for result in results:
@@ -149,3 +145,4 @@ if __name__ == '__main__':
             count = coll.find(dateQueryParam).count()
             print count, "listings exist for that date!"
     
+    #"""
