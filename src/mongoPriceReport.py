@@ -76,8 +76,8 @@ class ReportGenerator(object):
     def generate(self):
         fullResultSet = []
         for currSet in self.cardDataColl.distinct("set"):
-            start = self.cardDataColl.find({"store":self.storeName, "date":startDate, "set":currSet}).sort("name")
-            end = self.cardDataColl.find({"store":self.storeName, "date":endDate, "set":currSet}).sort("name")
+            start = self.cardDataColl.find({"store":self.storeName, "date":self.startDate, "set":currSet}).sort("name")
+            end = self.cardDataColl.find({"store":self.storeName, "date":self.endDate, "set":currSet}).sort("name")
             startTree = self.getTree(start)
             endTree = self.getTree(end)
             result = self.getTreeResult(startTree,endTree)
@@ -121,7 +121,7 @@ def getDataDict(aDiffResult):
 def priceReport(cardDataColl,reportDataColl,startDate=None,endDate=None,outputDir=None,quantityFilterFlag=False,storeName="StarCity Games",storeShort='scg',humanFormat=True,verbose=False,debug=False):
     if endDate is None: endDate = date.today().strftime('%Y-%m-%d')
     if startDate is None: startDate = (date.today() - timedelta(days=1)).strftime('%Y-%m-%d')
-    if filename is None: filename = storeShort.replace(' ','')+startDate+"_"+endDate+".tsv"
+    filename = storeShort.replace(' ','')+startDate+"_"+endDate+".tsv"
     outputLocation = outputDir + filename
     if verbose: print "Outputting data to: ", outputLocation
     
