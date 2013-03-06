@@ -76,13 +76,14 @@ class ReportGenerator(object):
     def generate(self):
         fullResultSet = []
         for currSet in self.cardDataColl.distinct("set"):
-            start = self.cardDataColl.find({"store":self.storeName, "date":startDate, "set":currSet}).sort("name")
-            end = self.cardDataColl.find({"store":self.storeName, "date":endDate, "set":currSet}).sort("name")
+            start = self.cardDataColl.find({"store":self.storeName, "date":self.startDate, "set":currSet}).sort("name")
+            end = self.cardDataColl.find({"store":self.storeName, "date":self.endDate, "set":currSet}).sort("name")
             startTree = self.getTree(start)
             endTree = self.getTree(end)
             result = self.getTreeResult(startTree,endTree)
             filteredResult = [res for res in result if res != None]
             fullResultSet = fullResultSet+filteredResult
+        #TODO fix lambda to use self.reportFilter ?
         sortedResult = sorted(fullResultSet, reverse=True,key=lambda pricereport: math.fabs(pricereport.priceChange))
         return sortedResult
     
@@ -110,8 +111,8 @@ class ReportGenerator(object):
         if self.reportFilter(report):
             return report
         return None
-#        if report.priceChange == 0:
-#            return None
+        #if report.priceChange == 0:
+        #    return None
         return report
 
 def getDataDict(aDiffResult):
@@ -121,7 +122,7 @@ def getDataDict(aDiffResult):
 def priceReport(cardDataColl,reportDataColl,startDate=None,endDate=None,outputDir=None,quantityFilterFlag=False,storeName="StarCity Games",storeShort='scg',humanFormat=True,verbose=False,debug=False):
     if endDate is None: endDate = date.today().strftime('%Y-%m-%d')
     if startDate is None: startDate = (date.today() - timedelta(days=1)).strftime('%Y-%m-%d')
-    if filename is None: filename = storeShort.replace(' ','')+startDate+"_"+endDate+".tsv"
+    filename = storeShort.replace(' ','')+startDate+"_"+endDate+".tsv"
     outputLocation = outputDir + filename
     if verbose: print "Outputting data to: ", outputLocation
     
@@ -129,7 +130,6 @@ def priceReport(cardDataColl,reportDataColl,startDate=None,endDate=None,outputDi
     ret['report_file_path']=outputLocation
     ret['start_date']=startDate
     ret['end_date']=endDate
-    
     
     gen = ReportGenerator(cardDataColl, startDate, endDate, storeName, quantityFilterFlag)
     diffs = gen.generate()
@@ -158,8 +158,7 @@ if __name__ == '__main__':
     outputLocation = None
     filename = None
     filterQuantity = False
-    outputDir = ""
-    sendDB = True
+    outputDir = None
 
     parser = argparse.ArgumentParser(description='Use the mongo db to generate a price report.')
     parser.add_argument('-s', help="Start date in YYYY-MM-DD", required=True)
@@ -168,7 +167,6 @@ if __name__ == '__main__':
     parser.add_argument('-n', help="Output filename. If not given, will use a scgSTART_END format.")    
     parser.add_argument('-c', action='store_true', help="Store in human-readable format.")
     parser.add_argument('-q', action='store_true', help="Apply quantity filter instead of price filter.")
-    parser.add_argument('-d', action='store_false', help="Don't send price report to the database.")
     parser.add_argument('-r', help="Set store name.")
     args = vars(parser.parse_args())
 
@@ -184,8 +182,6 @@ if __name__ == '__main__':
         filterQuantity = args['q']
     if args['n'] != None:
         filename = args['n']
-    if args['d']:
-        sendDB = args['d']
     if args['o'] != None:
         outputDir = args['o']
         if not outputDir.endswith('/'):
@@ -193,12 +189,17 @@ if __name__ == '__main__':
     
     dbName = "cardData"
     cardDataCollName = "priceCollection"
-    reportCollName = "priceReports"
+    reportCollName = "reports"
     c = Connection()
     db = c[dbName]
     cardDataColl = db[cardDataCollName]
     reportColl = db[reportCollName]
     
+    resultDict = priceReport(cardDataColl,reportColl,startDate=startDate,endDate=endDate,outputDir=outputDir,quantityFilterFlag=filterQuantity,storeName=storeName,storeShort=storeShort,humanFormat=humanFormat,verbose=False,debug=False)
+    print 'result fields:'
+    for k,v in resultDict.iteritems():
+        print '\t',k,':',v
+    """
     if filename is None:
         filename = storeShort.replace(' ','')+startDate+"_"+endDate+".tsv"
 
@@ -212,7 +213,7 @@ if __name__ == '__main__':
         for result in diffs:
             print result.toString()
             diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
-#            print diff
+            #print diff
             reportColl.insert(diff)
 
     else:
@@ -221,8 +222,8 @@ if __name__ == '__main__':
                 f.write(diffs[0].getCSVHeader())
                 f.write("\r\n")
             for result in diffs:
-#                f.write(result.toString())
-#                print diff
+                #f.write(result.toString())
+                #print diff
                 if sendDB:
                     diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
                     reportColl.insert(diff)
@@ -231,3 +232,4 @@ if __name__ == '__main__':
                 else:
                     f.write(result.toCSVString())
                 f.write("\r\n")
+    #"""
