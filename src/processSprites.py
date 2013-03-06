@@ -72,7 +72,42 @@ class ConvertCaller():
         for cur in self.opts:
             yield (curCall.replace(self.path,filePath).replace(self.directory,fileDirectory).replace(self.name,fileHash).split(' ') for curCall in cur)
             #yield cur.replace(self.path,filePath).replace(self.directory,fileDirectory).replace(self.name,fileHash).split(' ')
-    
+
+def processSprites(spriteColl,spriteDir="sprites/",verbose=False,debug=False):
+    conv = ConvertCaller()
+    for cur in glob.iglob(spriteDir + '*.png'):
+        print "cur image path:",cur
+        curSplitArr = cur.split('/')
+        dirString = '/'.join(curSplitArr[:-1])+'/'
+        imageHash = curSplitArr[-1].split('.')[0]
+        chosen = None
+        for convCalls in conv.getNext(dirString,cur,imageHash):
+            for curCall in convCalls:
+                convertResult = subprocess.call(curCall)
+                if not convertResult == 0:
+                    #handle convert error
+                    print "error on convert"
+                    break
+            #tesseract creates a $imageHash.txt output file
+            if not 0==subprocess.call(['tesseract', dirString+imageHash+'.tiff', dirString+imageHash, 'mitch']):
+                #handle tesseract error
+                print "tess error"
+                break
+            result = subprocess.check_output(['cat',dirString+imageHash+'.txt']).strip().replace(' ','').split('\n')
+            print "\tresult:",result
+            chosen = chooseResult(*result)
+            print "\tchose:", chosen
+            subprocess.check_output(['rm',dirString+imageHash+'.txt'])
+            subprocess.check_output(['rm',dirString+imageHash+'.tiff'])
+            if chosen is not None:
+                if debug is False:
+                    spriteColl.update({'hash':imageHash},{'$set':{'values':chosen}}, upsert=True)
+                    code = subprocess.call(["mv", spriteDir+imageHash+".png", spriteDir+"done/"])
+                    if not code == 0: print "error moving hashfile",spriteDir+imageHash+".png","to",spriteDir+"done/"
+                break
+        if chosen is None:
+            print "failed to tesseract:",dirString+imageHash
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run OCR with varying arguments over sprite files.')
     parser.add_argument('-v', action='store_true', help='Verbose flag')

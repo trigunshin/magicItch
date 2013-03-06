@@ -51,7 +51,28 @@ class ScgImports():
         ret = ret.replace('.', '')
         ret = ret.replace(',', '')
         return ret
+
+def spliceSpriteData(spriteColl,cardDataColl,dataDirectory='scg_data/',datestring=None,storeName="StarCity Games",delimiter=',',verbose=False,debug=False):
+    if datestring is None: datestring = date.today().isoformat()
+    imp = ScgImports(datestring, storeName, spriteColl, delimiter)
+    dateQueryParam = {"date":datestring, "store":storeName}
     
+    fileToUse = dataDirectory + 'scg_'+datestring+'.tsv'
+    
+    if debug:
+        results = imp.parseFile(fileToUse)
+        for result in results:
+            print result
+    else:
+        if cardDataColl.find(dateQueryParam).count() == 0:
+            results = imp.parseFile(fileToUse)
+            cardDataColl.insert(results)
+            for post in cardDataColl.find(dateQueryParam).limit(2).sort("name"):
+                print post
+        else:
+            count = coll.find(dateQueryParam).count()
+            print count, "listings exist for that date!"
+
 if __name__ == '__main__':
     verbose = False
     datestring = None
