@@ -54,8 +54,8 @@ class Worker(ConsumerMixin):
             result = fun(*args, **kwdict(kwargs))
             if result:
                 print 'Result:'#print fun.__name__,result
-                for cur in result:
-                    print "\t",cur
+                for k,v in result.iteritems():
+                    print "\t",k,'||',v
         except Exception, exc:
             #re-queue the request
             #send_as_task(self.connection,body['fun'],args,kwargs,priority='itch')
@@ -121,6 +121,7 @@ if __name__ == "__main__":
     SPRITE_DIR=ITCHDIR+"sprites/"
     LOGDIR=HOMEDIR+"logs/magicItch/"
     SPRITE_MAP_FILE=SRCDIR+"ocr_map.csv"
+    DELIMITER = '\t'
     
     debug_flag=False
     verbose_flag=False
@@ -135,9 +136,9 @@ if __name__ == "__main__":
         conn = Connection(connection_string)
         print "...connected."
         
-        scgDownload = partial(outsideIn,spriteColl,fullFileDirectory=SCG_DATA_DIR,mappingFilePath=SPRITE_MAP_FILE,spriteFilePath=SPRITE_DIR,delimiter=",",verbose=verbose_flag,debug=debug_flag)
+        scgDownload = partial(outsideIn,spriteColl,fullFileDirectory=SCG_DATA_DIR,mappingFilePath=SPRITE_MAP_FILE,spriteFilePath=SPRITE_DIR,delimiter=DELIMITER,verbose=verbose_flag,debug=debug_flag)
         spriteProcess = partial(processSprites,spriteColl,spriteDir=SPRITE_DIR,verbose=verbose_flag,debug=debug_flag)
-        dataGenerate = partial(spliceSpriteData,spriteColl,cardDataColl,dataDirectory=SCG_DATA_DIR,datestring=None,storeName="StarCity Games", delimiter=',',verbose=verbose_flag,debug=debug_flag)
+        dataGenerate = partial(spliceSpriteData,spriteColl,cardDataColl,dataDirectory=SCG_DATA_DIR,datestring=None,storeName="StarCity Games", delimiter=DELIMITER,verbose=verbose_flag,debug=debug_flag)
         
         hello_wrapped = wrapCall(conn, hello_task, "hello_task_success","hello_task_error")
         #scgDownload = wrapCall(conn, scgDownload, 'scg_download_success','scg_download_error')
