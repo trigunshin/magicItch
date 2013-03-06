@@ -63,26 +63,21 @@ class PriceReport(object):
             p + " with a quantity change of " + str(self.quantChange) + " to " + str(self.endQuant) + "."
 
 class ReportGenerator(object):
-    def __init__(self,start,end,store,filter):
+    def __init__(self,cardDataColl,start,end,store,filter):
         self.storeName = store
         self.startDate = start
         self.endDate = end
-        self.dbName = 'cardData'
-        self.collName = 'priceCollection'
+        self.cardDataColl = cardDataColl
         if not filter:
             self.reportFilter = self.priceChange
         else:
             self.reportFilter = self.quantChange
-
+    
     def generate(self):
-        c = Connection()
-        db = c[self.dbName]
-        coll = db[self.collName]
-        
         fullResultSet = []
-        for currSet in coll.distinct("set"):
-            start = coll.find({"store":self.storeName, "date":startDate, "set":currSet}).sort("name")
-            end = coll.find({"store":self.storeName, "date":endDate, "set":currSet}).sort("name")
+        for currSet in self.cardDataColl.distinct("set"):
+            start = self.cardDataColl.find({"store":self.storeName, "date":startDate, "set":currSet}).sort("name")
+            end = self.cardDataColl.find({"store":self.storeName, "date":endDate, "set":currSet}).sort("name")
             startTree = self.getTree(start)
             endTree = self.getTree(end)
             result = self.getTreeResult(startTree,endTree)
@@ -118,6 +113,36 @@ class ReportGenerator(object):
 #        if report.priceChange == 0:
 #            return None
         return report
+
+def priceReport(cardDataColl, reportDataColl, startDate,endDate,outputLocation=None,quantityFilterFlag=False,storeName="StarCity Games",verbose=False,debug=False):
+    #outputLocation = outputDir + filename
+    print "Outputting data to: ", outputLocation
+    
+    gen = ReportGenerator(cardDataColl, startDate, endDate, storeName, filterQuantity)
+    diffs = gen.generate()
+    
+    if outputLocation is None:
+        for result in diffs:
+            print result.toString()
+            diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
+            #print diff
+            reportDataColl.insert(diff)
+    else:
+        with open(outputLocation, 'w') as f:
+            if not humanFormat:
+                f.write(diffs[0].getCSVHeader())
+                f.write("\r\n")
+            for result in diffs:
+                #f.write(result.toString())
+                #print diff
+                if sendDB:
+                    diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
+                    reportDataColl.insert(diff)
+                if humanFormat:
+                    f.write(result.toHumanString())
+                else:
+                    f.write(result.toCSVString())
+                f.write("\r\n")
 
 if __name__ == '__main__':
     storeName = "StarCity Games"
@@ -160,26 +185,30 @@ if __name__ == '__main__':
         outputDir = args['o']
         if not outputDir.endswith('/'):
             outputDir = outputDir+'/'
-
+    
+    dbName = "cardData"
+    cardDataCollName = "priceCollection"
+    reportCollName = "priceReports"
+    c = Connection()
+    db = c[dbName]
+    cardDataColl = db[cardDataCollName]
+    reportColl = db[reportCollName]
+    
     if filename is None:
         filename = storeShort.replace(' ','')+startDate+"_"+endDate+".tsv"
 
     outputLocation = outputDir + filename
     print "Outputting data to: ", outputLocation
     
-    gen = ReportGenerator(startDate, endDate,storeName, filterQuantity)
+    gen = ReportGenerator(cardDataColl, startDate, endDate,storeName, filterQuantity)
     diffs = gen.generate()
-
-    c=Connection()
-    db=c[gen.dbName]
-    diffCollection=db["priceReports"]
 
     if outputLocation is None:
         for result in diffs:
             print result.toString()
             diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
 #            print diff
-            diffCollection.insert(diff)
+            reportColl.insert(diff)
 
     else:
         with open(outputLocation, 'w') as f:
@@ -191,7 +220,7 @@ if __name__ == '__main__':
 #                print diff
                 if sendDB:
                     diff = [{"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}]
-                    diffCollection.insert(diff)
+                    reportColl.insert(diff)
                 if humanFormat:
                     f.write(result.toHumanString())
                 else:

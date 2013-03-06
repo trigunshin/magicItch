@@ -309,12 +309,43 @@ class MappingGenerator:
         if self.verbose: print "patValMap",patternValueMap
         
         return patternValueMap
-calledMe = 0
-def callme(aSoup):
-    global calledMe
-    calledMe += 1
-    print "calledMe",calledMe
-    return calledMe
+
+def outsideIn(spriteColl, fullFileDirectory = "SCG/", mappingFilePath = "ocr_map.csv", spriteFilePath = "sprites/", delimiter=',',verbose=False, debug=False):
+    spriteFetcher = SpriteFetcher(spriteColl, aTargetDirectory=spriteFilePath, verbose=verbose)
+    mapGen = MappingGenerator(mappingFilePath, delimiter, verbose)
+    oMap = mapGen.generateOffsetMap()
+    setLinkBuilder = SetLinkBuilder()
+    
+    cardInfoParser = CardInfoParser(setLinkBuilder, mapGen, spriteFetcher=spriteFetcher, verboseFlag=verbose,debugFlag=debug)
+    #this is executed per-page with base soup argument passed in
+    cardInfoParser.addSoupCaller(spriteFetcher.saveFile)
+    cardInfoParser.addSoupCaller(cardInfoParser.getSetData)
+    
+    parseResults = cardInfoParser.getAllSetInfo()
+    #now we want to fetch out the card data
+    allSetInfo = []
+    #"""
+    for result in parseResults:
+        #process set data results but not the sprite fetcher results
+        if result[0] == cardInfoParser.getSetData.__name__:
+            allSetInfo.extend(result[1])
+    #"""
+    print "done w/# of records:",len(allSetInfo)
+    #allSetInfo = allinfo[1][1]#maps to infoparser's data value
+    
+    """
+    coll.insert(allSetInfo)
+    #"""
+    #"""
+    today = date.today()
+    tabFileDest = fullFileDirectory+"scg_"+today.isoformat()+".tsv"
+    
+    print "Starting file output to: ", tabFileDest
+    tab = open(tabFileDest, 'w')
+    for card in allSetInfo:
+        tab.write(card.getString("\t")+"\n")
+    tab.close()
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Scrape sell data from SCG website to the given file.')
     parser.add_argument('-v', action='store_true', help='Verbose flag')
@@ -350,8 +381,6 @@ if __name__ == '__main__':
     mapGen = MappingGenerator(mappingFilePath, ',', verbose)
     oMap = mapGen.generateOffsetMap()
     setLinkBuilder = SetLinkBuilder()
-    #example for other module to use spoilerpage soup data
-    #setLinkBuilder.addBasePageSoupCaller(aFunction(theSoup))
     
     cardInfoParser = CardInfoParser(setLinkBuilder, mapGen, spriteFetcher=spriteFetcher, verboseFlag=verbose,debugFlag=debug)
     #this is executed per-page with base soup argument passed in
