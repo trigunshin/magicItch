@@ -42,7 +42,7 @@ class ScgImports():
                 #TODO this'll explode on a hash fail, but that's ok for now
                 spriteMap = self.sprites.find_one({'hash':aHash})['values']
                 self.spriteCache[aHash] = spriteMap
-            return formatNumber(''.join([spriteMap[val] for val in toParse.split('|')]))
+            return self.formatNumber(''.join([spriteMap[val] for val in toParse.split('|')]))
         except TypeError,e:
             raise Exception("Hash data not found:"+aHash)
     
