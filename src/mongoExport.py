@@ -30,11 +30,17 @@ class ScgImports():
                 quant = self.hashParse(row[self.quantIndex], spriteHash)
                 price = self.hashParse(row[self.priceIndex], spriteHash)
                 #rarity = row[self.rarityIndex]
+                """
+                #XXX debug a broken solve, leaving the skeleton here for it
+                if name == "Mountain (#376)":
+                    print  {"name":name,"set":setName,"store":self.storeName,"quantity":quant,"price":price,"date":self.datestring}
+                    print 'hash:',spriteHash,'\tsolve:',self.spriteCache[spriteHash]
+                    print 'raw_quant',row[self.quantIndex],'raw_price:',row[self.priceIndex]
+                #"""
                 yield {"name":name,"set":setName,"store":self.storeName,"quantity":quant,"price":price,"date":self.datestring}
     
     def hashParse(self, toParse, aHash):
         if toParse == "None": return "None"
-        #print toParse
         try:
             try:
                 spriteMap=self.spriteCache[aHash]
