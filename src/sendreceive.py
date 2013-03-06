@@ -1,6 +1,4 @@
 import sys,os
-#from reports import getReport
-#from processFiles import ParseModule
 from sprites import outsideIn
 from processSprites import processSprites
 from mongoExport import spliceSpriteData
@@ -11,7 +9,6 @@ from kombu.common import maybe_declare
 from kombu.mixins import ConsumerMixin
 from kombu.pools import producers
 from kombu.utils import kwdict, reprcall
-from kombu.utils.debug import setup_logging
 
 rabbitURL = os.getenv("RABBIT_HOST","localhost")
 connection_string = "amqp://bigdata:a@"+rabbitURL+":5672//"
@@ -23,7 +20,6 @@ task_queues = [Queue('itch', task_exchange, routing_key='itch')]
 def hello_task(**varargs):
     for k,v in varargs.iteritems():
         print k,"||",v
-    #print("Hello %s" % (who, ))
 
 def send_as_task(connection, fun, args=(), kwargs={}, priority='itch'):
     payload = {'fun': fun, 'args': args, 'kwargs': kwargs}
@@ -32,13 +28,10 @@ def send_as_task(connection, fun, args=(), kwargs={}, priority='itch'):
         maybe_declare(task_exchange, producer.channel)
         producer.publish(payload,serializer='pickle',compression='bzip2',routing_key=routing_key)
 
-def run_producer():
-    print "Connecting ..."
-    with Connection(connection_string) as conn:
-        print "Connected w/string",connection_string
-        print "Sending tasks ..."
-        #send_as_task(conn, fun=hello_task.__name__, args=[], kwargs={'who':'Kombu'}, priority='itch')
-        send_as_task(conn, fun='process_data', args=[], kwargs={}, priority='itch')
+def run_producer(conn):
+    print "Sending tasks ..."
+    #send_as_task(conn, fun=hello_task.__name__, args=[], kwargs={'who':'Kombu'}, priority='itch')
+    send_as_task(conn, fun='hello_test', args=[], kwargs={}, priority='itch')
 
 class Worker(ConsumerMixin):
     def __init__(self, connection, taskmap=None):
@@ -51,7 +44,6 @@ class Worker(ConsumerMixin):
         return [Consumer(queues=task_queues,callbacks=[self.process_task])]
     
     def process_task(self, body, message):
-        #print body
         fun = self.taskMap[body['fun']]
         args = body['args']
         kwargs = body['kwargs']
@@ -68,16 +60,27 @@ class Worker(ConsumerMixin):
             print "err", 'task raised exception:', exc
         message.ack()
 
-def run_consumer(taskMap=None):
-    setup_logging(loglevel='INFO')
-    print "Connecting to ",connection_string,"..."
-    with Connection(connection_string) as conn:
-        print "Connected w/string",connection_string
-        print "Awaiting tasks...\n"
+def run_consumer(conn, taskMap=None):
+    print "Awaiting tasks...\n"
+    try:
+        Worker(conn,taskMap).run()
+    except KeyboardInterrupt:
+        print('done')
+
+def wrapCall(conn, func, success_msg, err_msg):
+    def newfunc(*fargs, **fkeywords):
         try:
-            Worker(conn,taskMap).run()
-        except KeyboardInterrupt:
-            print('done')
+            ret = func(*fargs, **fkeywords)
+            #fire successMsg
+            send_as_task(conn,success_msg,[],{'test':'success'},priority='itch')
+            return ret
+        except Exception,e:
+            print e
+            #fire rabbit w/errMsg
+            send_as_task(conn,err_msg,[],{'test':'failed','err':str(e)},priority='itch')
+            raise e
+    newfunc.func = func
+    return newfunc
 
 if __name__ == "__main__":
     #daemon needs to know, for itch:
@@ -124,26 +127,50 @@ if __name__ == "__main__":
     spriteColl=db[spriteCollName]
     cardDataColl=db[cardDataCollName]
     
-    scgDownload = partial(outsideIn,spriteColl,fullFileDirectory=SCG_DATA_DIR,mappingFilePath=SPRITE_MAP_FILE,spriteFilePath=SPRITE_DIR,delimiter=",",verbose=verbose_flag,debug=debug_flag)
-    spriteProcess = partial(processSprites,spriteColl,spriteDir=SPRITE_DIR,verbose=verbose_flag,debug=debug_flag)
-    dataGenerate = partial(spliceSpriteData,spriteColl,cardDataColl,dataDirectory=SCG_DATA_DIR,datestring=None,storeName="StarCity Games", delimiter=',',verbose=verbose_flag,debug=debug_flag) 
-    taskMap = {
-      'hello_task':hello_task,
-      'scg_download':scgDownload,
-      'process_sprites':spriteProcess,
-      'process_data':dataGenerate
-    }
-    #"""
-    if sys.argv[0].startswith("python"):
-        option_index = 2
-    else:
-        option_index = 1
-    option = sys.argv[option_index]
-    if option == "produce":
-        run_producer()
-    elif option == "consume":
-        run_consumer(taskMap)
-    else:
-        print "Unknown option '%s'; exiting ..." % option
-        sys.exit(1)
+    try:
+        print "Connecting to ",connection_string,"..."
+        conn = Connection(connection_string)
+        print "...connected."
+        
+        scgDownload = partial(outsideIn,spriteColl,fullFileDirectory=SCG_DATA_DIR,mappingFilePath=SPRITE_MAP_FILE,spriteFilePath=SPRITE_DIR,delimiter=",",verbose=verbose_flag,debug=debug_flag)
+        spriteProcess = partial(processSprites,spriteColl,spriteDir=SPRITE_DIR,verbose=verbose_flag,debug=debug_flag)
+        dataGenerate = partial(spliceSpriteData,spriteColl,cardDataColl,dataDirectory=SCG_DATA_DIR,datestring=None,storeName="StarCity Games", delimiter=',',verbose=verbose_flag,debug=debug_flag)
+        
+        hello_wrapped = wrapCall(conn, hello_task, "hello_task_success","hello_task_error")
+        #scgDownload = wrapCall(conn, scgDownload, 'scg_download_success','scg_download_error')
+        #spriteProcess = wrapCall(conn, spriteProcess, 'process_sprites_success','process_sprites_error')
+        #dataGenerate = wrapCall(conn, dataGenerate, 'process_data_success','process_data_error')
+        
+        taskMap = {
+          'hello_task':hello_task,
+          'hello_task_success':hello_task,
+          'hello_task_error':hello_task,
+          'hello_test':hello_wrapped,
+          
+          'scg_download':scgDownload,
+          'scg_download_success':spriteProcess,
+          'scg_download_error':hello_task,
+          
+          'process_sprites':spriteProcess,
+          'process_sprites_success':dataGenerate,
+          'process_sprites_error':hello_task,
+          
+          'process_data':dataGenerate,
+          'process_data_success':hello_task,
+          'process_data_error':hello_task
+        }
+        #"""
+        if sys.argv[0].startswith("python"):
+            option_index = 2
+        else:
+            option_index = 1
+        option = sys.argv[option_index]
+        if option == "produce":
+            run_producer(conn)
+        elif option == "consume":
+            run_consumer(conn,taskMap)
+        else:
+            print "Unknown option '%s'; exiting ..." % option
+            sys.exit(1)
+    finally: conn.close()
     #"""
