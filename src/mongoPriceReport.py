@@ -12,8 +12,12 @@ class PriceReport(object):
         self.name = start['name']
         self.start = start['date']
         self.end = end['date']
-        self.priceChange = self.getDiff(start['price'], end['price'])
-        self.quantChange = self.getDiff(start['quantity'],end['quantity'])
+        try:
+            self.priceChange = self.getDiff(start['price'], end['price'])
+            self.quantChange = self.getDiff(start['quantity'],end['quantity'])
+        except ValueError,e:
+            print "startD:",start,"end:",end
+            raise e
         self.startPrice = start['price']
         self.endPrice = end['price']
         self.startQuant = start['quantity']
@@ -26,12 +30,19 @@ class PriceReport(object):
             startval= 0
         if endval == 'None':
             endval = 0
+        """
+        startval=start.strip()
+        endval=end.strip()
+        if startval in ['None',None] or len(startval) == 0:#== 'None' or startval == '':
+            startval= '0'
+        if endval in ['None',None] or len(endval) == 0:#== 'None' or endval == '':
+            endval = '0'
+        print 'endval:',endval,'startval:',startval,"len(start):",len(startval)#,'t(startval):',type(startval)
+        """
         diff = int(endval) - int(startval)
         return diff
 
     def getCSVHeader(self):
-        #ret = ''.join([`key`+',' for key in self.__dict__.iterkeys()])
-        #return ret.rstrip(",")
         return "name,set,priceChange,price,quantityChange,quantity"
 
     def toString(self, csvflag=False):
@@ -40,13 +51,6 @@ class PriceReport(object):
         return ''.join([`key`+":"+`value`+"," for key, value in self.__dict__.iteritems()])
 
     def toCSVString(self):
-        #ret = ''
-        #ret.join([`key`+',' for key in self.__dict__.iterkeys()])
-        #ret.join('\n')
-        #ret.join([`value`+',' for key, value in self.__dict__.iteritems()])
-        #print "iterkeys",self.__dict__.iteritems(),"\n\t",self.__dict__.itervalues()
-        #return ret.rstrip(",")
-        #return ret
         p = str(self.endPrice)
         p = p[:-2] + "." + p[-2:]
         pc = str(self.priceChange)
@@ -77,14 +81,15 @@ class ReportGenerator(object):
         ret = []
         for curSet in self.cardDataColl.distinct("set"):
             start = self.cardDataColl.find({"store":self.storeName, "date":self.startDate, "set":curSet}).sort("name",1)
+            #print 'store:',self.storeName,'date:',self.startDate,'set:',curSet
+            #print 'start count:',self.cardDataColl.find({"store":self.storeName, "date":self.startDate, "set":curSet}).count()
             end = self.cardDataColl.find({"store":self.storeName, "date":self.endDate, "set":curSet}).sort("name",1)
             cardDict = {}
             for cur in start:
                 cardDict[cur['name']] = cur
-            
             for cur in end:
                 try:
-                    first_val = cardDict[cur['name']
+                    first_val = cardDict[cur['name']]
                     report = self.getReport(first_val, cur)
                     if report is not None: ret.append(report)
                 except KeyError:
@@ -127,12 +132,13 @@ class ReportGenerator(object):
 
     def getReport(self,a,b):
         report = PriceReport(a,b)
+        #print "report: a.price=",report['startPrice'],'b.price:',report['endPrice'],'diff:',report.priceChange
         if self.reportFilter(report):
             return report
         return None
         #if report.priceChange == 0:
         #    return None
-        return report
+        #return report
 
 def getDataDict(aDiffResult):
     return {"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}
@@ -152,7 +158,7 @@ def priceReport(cardDataColl,reportDataColl,startDate=None,endDate=None,outputDi
     
     gen = ReportGenerator(cardDataColl, startDate, endDate, storeName, quantityFilterFlag)
     diffs = gen.gen()
-    
+    print "difflen",len(diffs)
     if outputLocation is None:
         reportDataColl.insert([getDataDict(result) for result in diffs])
     else:
