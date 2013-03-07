@@ -36,7 +36,8 @@ def run_producer(conn):
     print "Sending tasks ..."
     #send_as_task(conn, fun=hello_task.__name__, args=[], kwargs={'who':'Kombu'}, priority='itch')
     #send_as_task(conn, fun='hello_test', args=[], kwargs={}, priority='itch')
-    send_as_task(conn, fun='process_sprites', args=[], kwargs={}, priority='itch')
+    #send_as_task(conn, fun='process_sprites', args=[], kwargs={}, priority='itch')
+    send_as_task(conn, fun='run_report', args=[], kwargs={'startDate':'2013-03-05'}, priority='itch')
 
 class Worker(ConsumerMixin):
     def __init__(self, connection, taskmap=None):
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     mongoPort = 27017
     dbName = "cardData"
     spriteCollName = "sprites"
-    cardDataCollName = "cardData"
+    cardDataCollName = "priceCollection"
     reportDataCollName = "reports"
     
     HOMEDIR="/home/pcrane/"
@@ -165,7 +166,8 @@ if __name__ == "__main__":
           'scg_download_error':hello_task,
           
           'process_sprites':spriteProcess,
-          'process_sprites_success':dataGenerate,
+          'process_sprites_success':hello_task,
+          #'process_sprites_success':dataGenerate,
           'process_sprites_error':hello_task,
           
           'process_data':dataGenerate,
