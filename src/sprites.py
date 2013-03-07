@@ -312,7 +312,7 @@ class MappingGenerator:
 
 def outsideIn(spriteColl, fullFileDirectory = "SCG/", mappingFilePath = "ocr_map.csv", spriteFilePath = "sprites/", delimiter=',',verbose=False, debug=False):
     spriteFetcher = SpriteFetcher(spriteColl, aTargetDirectory=spriteFilePath, verbose=verbose)
-    mapGen = MappingGenerator(mappingFilePath, delimiter, verbose)
+    mapGen = MappingGenerator(mappingFilePath, ",",verbose)#delimiter, verbose)
     oMap = mapGen.generateOffsetMap()
     setLinkBuilder = SetLinkBuilder()
     
