@@ -1,9 +1,9 @@
 import smtplib,os
 
 def send_email(subject="Test Email", extra_body_text=''):
-    gmail_user = "trigunshin@gmail.com"
+    gmail_user = "magic.itch@gmail.com"
     gmail_pwd = os.getenv("EMAIL_PASS","")
-    FROM = 'trigunshin@gmail.com'
+    FROM = 'magic.itch@gmail.com'
     TO = ['trigunshin@gmail.com'] #must be a list
     SUBJECT = subject
     TEXT = "Testing sending mail using gmail servers\n\n" + extra_body_text
