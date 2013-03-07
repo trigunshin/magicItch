@@ -1,7 +1,7 @@
 import sys,os,traceback
 from datetime import date
 
-from emailer import sendEmail
+from emailer import send_email
 from sprites import outsideIn
 from processSprites import processSprites
 from mongoExport import spliceSpriteData
@@ -38,7 +38,8 @@ def run_producer(conn):
     #send_as_task(conn, fun=hello_task.__name__, args=[], kwargs={'who':'Kombu'}, priority='itch')
     #send_as_task(conn, fun='hello_test', args=[], kwargs={}, priority='itch')
     #send_as_task(conn, fun='process_sprites', args=[], kwargs={}, priority='itch')
-    send_as_task(conn, fun='run_report', args=[], kwargs={'startDate':'2013-03-05'}, priority='itch')
+    #send_as_task(conn, fun='run_report', args=[], kwargs={'startDate':'2013-03-05'}, priority='itch')
+    send_as_task(conn, fun='run_report_error', args=[], kwargs={'startDate':'2013-03-05','err':'someError'}, priority='itch')
 
 class Worker(ConsumerMixin):
     def __init__(self, connection, taskmap=None):
@@ -91,7 +92,7 @@ def wrapCall(conn, func, success_msg, err_msg):
     return newfunc
 
 def auto_alert_handler(processName, **varargs):
-    sendEmail("MagicItch Error:"+processName,'\n'.join([`k`+'||'+`v` for k,v in varargs.iteritems()]))
+    send_email("MagicItch Error:"+processName,'\n'.join([`k`+'||'+`v` for k,v in varargs.iteritems()]))
     #for k,v in varargs.iteritems():
     #    print '\t',k,"||",v
 
