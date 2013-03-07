@@ -74,7 +74,9 @@ class ConvertCaller():
             #yield cur.replace(self.path,filePath).replace(self.directory,fileDirectory).replace(self.name,fileHash).split(' ')
 
 def processSprites(spriteColl,spriteDir="sprites/",verbose=False,debug=False):
+    ret = {}
     conv = ConvertCaller()
+    print "checking dir:",glob.iglob(spriteDir + '*.png')
     for cur in glob.iglob(spriteDir + '*.png'):
         print "cur image path:",cur
         curSplitArr = cur.split('/')
@@ -107,6 +109,7 @@ def processSprites(spriteColl,spriteDir="sprites/",verbose=False,debug=False):
                 break
         if chosen is None:
             print "failed to tesseract:",dirString+imageHash
+    return ret
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run OCR with varying arguments over sprite files.')
