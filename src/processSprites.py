@@ -76,9 +76,11 @@ class ConvertCaller():
 def processSprites(spriteColl,spriteDir="sprites/",verbose=False,debug=False):
     ret = {}
     conv = ConvertCaller()
-    print "checking dir:",glob.iglob(spriteDir + '*.png')
+    #print "checking dir:",glob.iglob(spriteDir + '*.png')
+    count=0
     for cur in glob.iglob(spriteDir + '*.png'):
         print "cur image path:",cur
+        count+=1
         curSplitArr = cur.split('/')
         dirString = '/'.join(curSplitArr[:-1])+'/'
         imageHash = curSplitArr[-1].split('.')[0]
@@ -109,6 +111,7 @@ def processSprites(spriteColl,spriteDir="sprites/",verbose=False,debug=False):
                 break
         if chosen is None:
             print "failed to tesseract:",dirString+imageHash
+    ret['count']=count
     return ret
 
 if __name__ == '__main__':
