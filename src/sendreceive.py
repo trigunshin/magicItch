@@ -1,6 +1,7 @@
 import sys,os,traceback
 from datetime import date
 
+from emailer import sendEmail
 from sprites import outsideIn
 from processSprites import processSprites
 from mongoExport import spliceSpriteData
@@ -89,6 +90,11 @@ def wrapCall(conn, func, success_msg, err_msg):
     newfunc.func = func
     return newfunc
 
+def auto_alert_handler(processName, **varargs):
+    sendEmail("MagicItch Error:"+processName,'\n'.join([`k`+'||'+`v` for k,v in varargs.iteritems()]))
+    #for k,v in varargs.iteritems():
+    #    print '\t',k,"||",v
+
 if __name__ == "__main__":
     #daemon needs to know, for itch:
     """
@@ -155,6 +161,9 @@ if __name__ == "__main__":
         dataGenerate = wrapCall(conn, dataGenerate, 'process_data_success','process_data_error')
         reportGenerate = wrapCall(conn, runPriceReport, 'run_report_success','run_report_error')
         
+        #def auto_alert_handler(processName, **varargs):
+        reportGenerate_error = partial(auto_alert_handler, 'reportGenerate')
+        
         taskMap = {
           'hello_task':hello_task,
           'hello_task_success':hello_task,
@@ -176,7 +185,7 @@ if __name__ == "__main__":
           
           'run_report':reportGenerate,
           'run_report_success':hello_task,
-          'run_report_error':hello_task
+          'run_report_error':reportGenerate_error
         }
         #"""
         if sys.argv[0].startswith("python"):
