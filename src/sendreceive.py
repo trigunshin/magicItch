@@ -213,7 +213,8 @@ if __name__ == "__main__":
             option_index = 1
         option = sys.argv[option_index]
         if option == "produce":
-            command = sys.argv[option_index+1]
+            try:command = sys.argv[option_index+1]
+            except IndexError:command=None
             run_producer(conn,taskMap,command)
         elif option == "consume":
             run_consumer(conn,taskMap)
