@@ -33,13 +33,20 @@ def send_as_task(connection, fun, args=(), kwargs={}, priority='itch'):
         maybe_declare(task_exchange, producer.channel)
         producer.publish(payload,serializer='pickle',compression='bzip2',routing_key=routing_key)
 
-def run_producer(conn):
-    print "Sending tasks ..."
-    #send_as_task(conn, fun=hello_task.__name__, args=[], kwargs={'who':'Kombu'}, priority='itch')
-    #send_as_task(conn, fun='hello_test', args=[], kwargs={}, priority='itch')
-    #send_as_task(conn, fun='process_sprites', args=[], kwargs={}, priority='itch')
-    #send_as_task(conn, fun='run_report', args=[], kwargs={'startDate':'2013-03-05'}, priority='itch')
-    send_as_task(conn, fun='run_report_error', args=[], kwargs={'startDate':'2013-03-05','err':'someError'}, priority='itch')
+def run_producer(conn,taskMap,command=None):
+    print "Sending task..."
+    if command is None: return send_as_task(conn, fun=hello_task.__name__, args=[], kwargs={'who':'Kombu'}, priority='itch') 
+    
+    try:
+        taskMap[command]
+        send_as_task(conn, fun=command, args=[],kwargs={},priority='itch')
+        #send_as_task(conn, fun='hello_test', args=[], kwargs={}, priority='itch')
+        #send_as_task(conn, fun='process_sprites', args=[], kwargs={}, priority='itch')
+        #send_as_task(conn, fun='run_report', args=[], kwargs={'startDate':'2013-03-05'}, priority='itch')
+        #send_as_task(conn, fun='run_report_error', args=[], kwargs={'startDate':'2013-03-05','err':'someError'}, priority='itch')
+    except KeyError,e:
+        print "Command",command,"not found. Exitting..."
+    
 
 class Worker(ConsumerMixin):
     def __init__(self, connection, taskmap=None):
@@ -93,8 +100,6 @@ def wrapCall(conn, func, success_msg, err_msg):
 
 def auto_alert_handler(processName, **varargs):
     send_email("MagicItch Error:"+processName,'\n'.join([`k`+'||'+`v` for k,v in varargs.iteritems()]))
-    #for k,v in varargs.iteritems():
-    #    print '\t',k,"||",v
 
 if __name__ == "__main__":
     #daemon needs to know, for itch:
@@ -104,6 +109,7 @@ if __name__ == "__main__":
     daily_dir
     sprite_dir
     log_dir
+    email PW, via $EMAIL_PASS
     mongo host, via $MONGO_HOST
     mongo port
     rabbit host, via $RABBIT_HOST
@@ -146,24 +152,30 @@ if __name__ == "__main__":
     reportDataColl=db[reportDataCollName]
     
     try:
-        print "Connecting to ",connection_string,"..."
+        print "AMQP Connecting to ",connection_string,"..."
         conn = Connection(connection_string)
         print "...connected."
         
+        hello_wrapped = wrapCall(conn, hello_task, "hello_task_success","hello_task_error")
+        manual_email = partial(send_email, "Manual Test Email","Manual test stuffs")
+        
         scgDownload = partial(outsideIn,spriteColl,fullFileDirectory=SCG_DATA_DIR,mappingFilePath=SPRITE_MAP_FILE,spriteFilePath=SPRITE_DIR,delimiter=DELIMITER,verbose=verbose_flag,debug=debug_flag)
+        scgDownload = wrapCall(conn, scgDownload, 'scg_download_success','scg_download_error')
+        scgDownload_error = partial(auto_alert_handler, 'scgDownload')
+        
         spriteProcess = partial(processSprites,spriteColl,spriteDir=SPRITE_DIR,verbose=verbose_flag,debug=debug_flag)
+        spriteProcess_wrapped = wrapCall(conn, spriteProcess, 'process_sprites_success','process_sprites_error')
+        spriteProcess_error = partial(auto_alert_handler, 'spriteProcess')
+        
         dataGenerate = partial(spliceSpriteData,spriteColl,cardDataColl,dataDirectory=SCG_DATA_DIR,datestring=None,storeName="StarCity Games", delimiter=DELIMITER,verbose=verbose_flag,debug=debug_flag)
+        dataGenerate_wrapped = wrapCall(conn, dataGenerate, 'process_data_success','process_data_error')
+        dataGenerate_error = partial(auto_alert_handler, 'dataGenerate')
+        
         reportArgs={'startDate':None,'endDate':None,'outputDir':DAILY_REPORT_DIR,'quantityFilterFlag':False,'storeName':"StarCity Games",'storeShort':"scg",'humanFormat':True,'verbose':verbose_flag,'debug':debug_flag}
         runPriceReport = partial(priceReport,cardDataColl,reportDataColl,**reportArgs)
-        
-        hello_wrapped = wrapCall(conn, hello_task, "hello_task_success","hello_task_error")
-        #scgDownload = wrapCall(conn, scgDownload, 'scg_download_success','scg_download_error')
-        spriteProcess = wrapCall(conn, spriteProcess, 'process_sprites_success','process_sprites_error')
-        dataGenerate = wrapCall(conn, dataGenerate, 'process_data_success','process_data_error')
-        reportGenerate = wrapCall(conn, runPriceReport, 'run_report_success','run_report_error')
-        
-        #def auto_alert_handler(processName, **varargs):
+        runPriceReport_wrapped = wrapCall(conn, runPriceReport, 'run_report_success','run_report_error')
         reportGenerate_error = partial(auto_alert_handler, 'reportGenerate')
+        #reportGenerate_success = #handle emailing the report here via dbmux or something easier for now
         
         taskMap = {
           'hello_task':hello_task,
@@ -171,20 +183,26 @@ if __name__ == "__main__":
           'hello_task_error':hello_task,
           'hello_test':hello_wrapped,
           
+          'scg_download_manual':scgDownload,
+          'process_sprites_manual':spriteProcess,
+          'process_data_manual':dataGenerate,
+          'run_report_manual':runPriceReport,
+          'send_email_manual':manual_email,
+          
+          #AMQP flow
           'scg_download':scgDownload,
-          'scg_download_success':spriteProcess,
-          'scg_download_error':hello_task,
+          'scg_download_success':spriteProcess_wrapped,
+          'scg_download_error':scgDownload_error,
           
-          'process_sprites':spriteProcess,
-          'process_sprites_success':hello_task,
-          #'process_sprites_success':dataGenerate,
-          'process_sprites_error':hello_task,
+          'process_sprites':spriteProcess_wrapped,
+          'process_sprites_success':dataGenerate_wrapped,
+          'process_sprites_error':spriteProcess_error,
           
-          'process_data':dataGenerate,
-          'process_data_success':reportGenerate,
-          'process_data_error':hello_task,
+          'process_data':dataGenerate_wrapped,
+          'process_data_success':runPriceReport_wrapped,
+          'process_data_error':dataGenerate_error,
           
-          'run_report':reportGenerate,
+          'run_report':runPriceReport_wrapped,
           'run_report_success':hello_task,
           'run_report_error':reportGenerate_error
         }
@@ -195,7 +213,8 @@ if __name__ == "__main__":
             option_index = 1
         option = sys.argv[option_index]
         if option == "produce":
-            run_producer(conn)
+            command = sys.argv[option_index+1]
+            run_producer(conn,taskMap,command)
         elif option == "consume":
             run_consumer(conn,taskMap)
         else:
