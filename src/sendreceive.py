@@ -51,8 +51,7 @@ def run_producer(conn,taskMap,command=None):
 class Worker(ConsumerMixin):
     def __init__(self, connection, taskmap=None):
         self.connection = connection
-        if taskmap is None:
-            self.taskMap = {'hello_task':hello_task}
+        if taskmap is None: self.taskMap = {'hello_task':hello_task}
         else: self.taskMap = taskmap
     
     def get_consumers(self, Consumer, channel):
