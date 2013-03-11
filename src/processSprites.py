@@ -73,7 +73,7 @@ class ConvertCaller():
             yield (curCall.replace(self.path,filePath).replace(self.directory,fileDirectory).replace(self.name,fileHash).split(' ') for curCall in cur)
             #yield cur.replace(self.path,filePath).replace(self.directory,fileDirectory).replace(self.name,fileHash).split(' ')
 
-def processSprites(spriteColl,spriteDir="sprites/",verbose=False,debug=False):
+def processSprites(spriteColl,spriteDir="sprites/",verbose=False,debug=False,**kwargs):
     ret = {}
     conv = ConvertCaller()
     #print "checking dir:",glob.iglob(spriteDir + '*.png')

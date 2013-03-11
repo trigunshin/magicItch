@@ -85,8 +85,9 @@ def wrapCall(conn, func, success_msg, err_msg):
     def newfunc(*fargs, **fkeywords):
         try:
             ret = func(*fargs, **fkeywords)
+            if ret is None: ret = {}
             #fire successMsg
-            send_as_task(conn,success_msg,[],{},priority='itch')
+            send_as_task(conn,success_msg,[],ret,priority='itch')
             return ret
         except Exception,e:
             print e

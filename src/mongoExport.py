@@ -58,7 +58,7 @@ class ScgImports():
         ret = ret.replace(',', '')
         return ret
 
-def spliceSpriteData(spriteColl,cardDataColl,dataDirectory='scg_data/',datestring=None,storeName="StarCity Games",delimiter=',',verbose=False,debug=False):
+def spliceSpriteData(spriteColl,cardDataColl,dataDirectory='scg_data/',datestring=None,storeName="StarCity Games",delimiter=',',verbose=False,debug=False,**kwargs):
     ret={}
     if datestring is None: datestring = date.today().isoformat()
     imp = ScgImports(datestring, storeName, spriteColl, delimiter)

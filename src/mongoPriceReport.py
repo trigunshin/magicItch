@@ -144,7 +144,7 @@ def getDataDict(aDiffResult):
     return {"cardName":result.name,"cardSet":result.set,"priceChange":result.priceChange,"endPrice":result.endPrice,"endDate":result.end,"store":result.store}
 
 #XXX still needs some style love
-def priceReport(cardDataColl,reportDataColl,startDate=None,endDate=None,outputDir=None,quantityFilterFlag=False,storeName="StarCity Games",storeShort='scg',humanFormat=True,verbose=False,debug=False):
+def priceReport(cardDataColl,reportDataColl,startDate=None,endDate=None,outputDir=None,quantityFilterFlag=False,storeName="StarCity Games",storeShort='scg',humanFormat=True,verbose=False,debug=False,**kwargs):
     if endDate is None: endDate = date.today().strftime('%Y-%m-%d')
     if startDate is None: startDate = (date.today() - timedelta(days=1)).strftime('%Y-%m-%d')
     filename = storeShort.replace(' ','')+startDate+"_"+endDate+".tsv"

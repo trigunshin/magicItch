@@ -310,7 +310,7 @@ class MappingGenerator:
         
         return patternValueMap
 
-def outsideIn(spriteColl, fullFileDirectory = "SCG/", mappingFilePath = "ocr_map.csv", spriteFilePath = "sprites/", delimiter=',',verbose=False, debug=False):
+def outsideIn(spriteColl, fullFileDirectory = "SCG/", mappingFilePath = "ocr_map.csv", spriteFilePath = "sprites/", delimiter=',',verbose=False, debug=False, **kwargs):
     spriteFetcher = SpriteFetcher(spriteColl, aTargetDirectory=spriteFilePath, verbose=verbose)
     mapGen = MappingGenerator(mappingFilePath, ",",verbose)#delimiter, verbose)
     oMap = mapGen.generateOffsetMap()

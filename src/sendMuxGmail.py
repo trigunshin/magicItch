@@ -95,8 +95,8 @@ class Preferences(object):
 
 def mail(to, subject, text, attach):
     msg = MIMEMultipart()
-
-    print gmail_user   
+    
+    print gmail_user
     msg['From'] = gmail_user
     realToString=''
     for s in to:
@@ -104,19 +104,19 @@ def mail(to, subject, text, attach):
 #    print realToString,to, [gmail_user]+[]+to
     msg['To'] = gmail_user#realToString
     msg['Subject'] = subject
-
+    
     msg.attach(MIMEText(text)) 
-
-
+    
+    
     #attach each file in the list
-    for file in attach:
+    for cur_file in attach:
         part = MIMEBase('application', 'octet-stream')
-        part.set_payload(open(file, 'rb').read())
+        part.set_payload(open(cur_file, 'rb').read())
         Encoders.encode_base64(part)
         part.add_header('Content-Disposition',
-                'attachment; filename="%s"' % os.path.basename(file))
+                'attachment; filename="%s"' % os.path.basename(cur_file))
         msg.attach(part)
-
+    
     mailServer = smtplib.SMTP("smtp.gmail.com", 587)
     mailServer.ehlo()
     mailServer.starttls()
@@ -153,16 +153,16 @@ if __name__ == '__main__':
     p=Preferences()
     emailMap = p.getEmailFileMapping()
     for key in emailMap.keys():
-        file = []
+        files = []
         for curFile in [directory+curFilename for curFilename in emailMap[key][p.attachments]]:
-            file.append(curFile)
+            files.append(curFile)
         dest=emailMap[key][p.emailArray]
         
         print "\tTo:",dest
-        print "\tFiles:",file
+        print "\tFiles:",files
         #msg="Hey,\nLast night there was an issue with (only) Avacyn Restored data for SCG. I'm re-sending the emails as there were a couple big moves from SCG on prices. Sorry for any inconvenience."
         msg="\nHey, these are the price changes from the last 24 hours. Let me at know at magic.itch@gmail.com if you have any questions, comments or requests."
         msg+="\n\nDon't forget; you can set your store and format preferences on the website now."
         subject="Hello from magicItch"#", "+str(date.today())
-        mail(dest, subject, msg, file)
+        mail(dest, subject, msg, files)
         time.sleep(2)

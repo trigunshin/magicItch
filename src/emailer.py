@@ -1,6 +1,6 @@
 import smtplib,os
 
-def send_email(subject="Test Email", extra_body_text=''):
+def send_email(subject="Test Email", extra_body_text='',attach=None,**kwargs):
     gmail_user = "magic.itch@gmail.com"
     gmail_pwd = os.getenv("EMAIL_PASS","")
     FROM = 'magic.itch@gmail.com'
@@ -23,3 +23,38 @@ def send_email(subject="Test Email", extra_body_text=''):
         print 'successfully sent the mail'
     except:
         print "failed to send mail"
+
+def send_email_attach(to, subject, text, attach):
+    gmail_user = "magic.itch@gmail.com"
+    gmail_pwd = os.getenv("EMAIL_PASS","")
+    msg = MIMEMultipart()
+    
+    msg['From'] = gmail_user
+    realToString = ','.join(to)
+    
+    #realToString=''
+    #for s in to:
+    #    realToString = realToString + s + ","
+    #print realToString,to, [gmail_user]+[]+to
+    msg['To'] = gmail_user#realToString
+    msg['Subject'] = subject
+    
+    msg.attach(MIMEText(text)) 
+    
+    #attach each file in the list
+    for cur_file in attach:
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(open(cur_file, 'rb').read())
+        Encoders.encode_base64(part)
+        part.add_header('Content-Disposition',
+                'attachment; filename="%s"' % os.path.basename(cur_file))
+        msg.attach(part)
+    
+    mailServer = smtplib.SMTP("smtp.gmail.com", 587)
+    mailServer.ehlo()
+    mailServer.starttls()
+    mailServer.ehlo()
+    mailServer.login(gmail_user, gmail_pwd)
+    mailServer.sendmail(gmail_user, [gmail_user]+[]+to, msg.as_string())
+    # Should be mailServer.quit(), but that crashes...
+    mailServer.close()
