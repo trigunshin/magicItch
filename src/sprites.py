@@ -300,7 +300,7 @@ class MappingGenerator:
         if matches:
             if self.verbose: print "Matches"
             for cur in matches:
-                if verbose: print "\tPattern:", cur[0], "\tOffset:", cur[1]
+                if self.verbose: print "\tPattern:", cur[0], "\tOffset:", cur[1]
                 #TODO: if no mapping found, handle / raise error here
                 patternValueMap[cur[0]] = self.offsetValueMap[cur[1]]
                 patternValueMap[cur[0][:6]] = self.offsetValueMap[cur[1]]#we want to add a match w/o the trailing '2'
