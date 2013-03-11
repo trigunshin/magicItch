@@ -1,16 +1,36 @@
 import smtplib,os
 
-def send_email(subject="Test Email", extra_body_text='',attach=None,**kwargs):
+def send_email(subject="Test Email", extra_body_text='',attach=None,report_file_path=None,**kwargs):
+    if attach is None: attach=[]
+    if report_file_path is not None: attach.append(report_file_path)
     gmail_user = "magic.itch@gmail.com"
     gmail_pwd = os.getenv("EMAIL_PASS","")
     FROM = 'magic.itch@gmail.com'
     TO = ['trigunshin@gmail.com'] #must be a list
     SUBJECT = subject
     TEXT = "Testing sending mail using gmail servers\n\n" + extra_body_text
-
+    
+    msg = MIMEMultipart()
+    msg['From'] = FROM#gmail_user
+    #realToString = ','.join(to)
+    msg['To'] = TO#gmail_user#realToString
+    msg['Subject'] = SUBJECT
+    
     # Prepare actual message
-    message = """\From: %s\nTo: %s\nSubject: %s\n\n%s
+    messageText = """\From: %s\nTo: %s\nSubject: %s\n\n%s
     """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
+    
+    msg.attach(MIMEText(TEXT)) 
+    
+    #attach each file in the list
+    for cur_file in attach:
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(open(cur_file, 'rb').read())
+        Encoders.encode_base64(part)
+        part.add_header('Content-Disposition',
+                'attachment; filename="%s"' % os.path.basename(cur_file))
+        msg.attach(part)
+    
     try:
         #server = smtplib.SMTP(SERVER) 
         server = smtplib.SMTP("smtp.gmail.com", 587) #or port 465 doesn't seem to work!
@@ -18,6 +38,7 @@ def send_email(subject="Test Email", extra_body_text='',attach=None,**kwargs):
         server.starttls()
         server.login(gmail_user, gmail_pwd)
         server.sendmail(FROM, TO, message)
+        mailServer.sendmail(gmail_user, [gmail_user]+[]+to, msg.as_string())
         #server.quit()
         server.close()
         print 'successfully sent the mail'

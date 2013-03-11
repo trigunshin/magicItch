@@ -177,6 +177,8 @@ if __name__ == "__main__":
         reportGenerate_error = partial(auto_alert_handler, 'reportGenerate')
         #reportGenerate_success = #handle emailing the report here via dbmux or something easier for now
         
+        #TODO tie in mailer w/reportgen, & use the rabbit_param for it
+        
         taskMap = {
           'hello_task':hello_task,
           'hello_task_success':hello_task,
