@@ -31,19 +31,19 @@ def send_email(subject="Test Email", extra_body_text='',attach=None,report_file_
                 'attachment; filename="%s"' % os.path.basename(cur_file))
         msg.attach(part)
     
-    try:
-        #server = smtplib.SMTP(SERVER) 
-        server = smtplib.SMTP("smtp.gmail.com", 587) #or port 465 doesn't seem to work!
-        server.ehlo()
-        server.starttls()
-        server.login(gmail_user, gmail_pwd)
-        server.sendmail(FROM, TO, message)
-        mailServer.sendmail(gmail_user, [gmail_user]+[]+to, msg.as_string())
-        #server.quit()
-        server.close()
-        print 'successfully sent the mail'
-    except:
-        print "failed to send mail"
+    #try:
+    #server = smtplib.SMTP(SERVER) 
+    server = smtplib.SMTP("smtp.gmail.com", 587) #or port 465 doesn't seem to work!
+    server.ehlo()
+    server.starttls()
+    server.login(gmail_user, gmail_pwd)
+    server.sendmail(FROM, TO, message)
+    mailServer.sendmail(gmail_user, [gmail_user]+[]+to, msg.as_string())
+    #server.quit()
+    server.close()
+    print 'successfully sent the mail'
+    #except Error,e:
+    #    print "failed to send mail",e
 
 def send_email_attach(to, subject, text, attach):
     gmail_user = "magic.itch@gmail.com"
