@@ -17,7 +17,7 @@ def send_email(subject="Test Email", extra_body_text='',attach=None,report_file_
     msg = MIMEMultipart()
     msg['From'] = FROM#gmail_user
     #realToString = ','.join(to)
-    msg['To'] = TO#gmail_user#realToString
+    msg['To'] = ', '.join(TO)#gmail_user#realToString
     msg['Subject'] = SUBJECT
     
     # Prepare actual message
@@ -41,8 +41,9 @@ def send_email(subject="Test Email", extra_body_text='',attach=None,report_file_
     server.ehlo()
     server.starttls()
     server.login(gmail_user, gmail_pwd)
-    server.sendmail(FROM, TO, message)
-    mailServer.sendmail(gmail_user, [gmail_user]+[]+to, msg.as_string())
+    print 'sendto',TO
+    server.sendmail(FROM,', '.join(TO),msg.as_string())
+    server.sendmail(gmail_user, [gmail_user]+[]+TO, msg.as_string())
     #server.quit()
     server.close()
     print 'successfully sent the mail'
