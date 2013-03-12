@@ -1,7 +1,7 @@
 import sys,os,traceback
 from datetime import date
 
-from emailer import send_email
+from emailer import send_report_email
 from sprites import outsideIn
 from processSprites import processSprites
 from mongoExport import spliceSpriteData
@@ -190,7 +190,7 @@ if __name__ == "__main__":
         
         #def send_report_email(gmail_user='magic.itch@gmail.com',gmail_pwd=None,recipients=None,gmail_port=587,gmail_server_address='smtp.gmail.com',subject="test",text_body="test",attachment_paths=None,report_file_path=None,**kwargs):
         #reportEmail = partial(send_email,subject="Report Generated Email",extra_body_text="Report successfully run, should be attached.",attach=None)
-        reportEmail = partial(send_email,subject="Report Generated Email",text_body="Report successfully run, should be attached.")
+        reportEmail = partial(send_report_email,subject="Report Generated Email",text_body="Report successfully run, should be attached.")
         
         taskMap = {
           'hello_task':hello_task,
