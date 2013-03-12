@@ -208,7 +208,7 @@ if __name__ == "__main__":
           'process_data_error':dataGenerate_error,
           
           'run_report':runPriceReport_wrapped,
-          'run_report_success':hello_task,
+          'run_report_success':report_email_wrapped,
           'run_report_error':reportGenerate_error,
           
           'report_email':report_email_wrapped,
