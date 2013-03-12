@@ -178,6 +178,9 @@ if __name__ == "__main__":
         #reportGenerate_success = #handle emailing the report here via dbmux or something easier for now
         
         #TODO tie in mailer w/reportgen, & use the rabbit_param for it
+        #def send_email(subject="Test Email", extra_body_text='',attach=None,report_file_path=None,**kwargs):
+        reportEmail = partial(send_email,subject="Report Generated Email",extra_body_text="Report successfully run, should be attached.",attach=None)
+        report_email_wrapped = wrapCall(conn, reportEmail, 'report_email_success','report_email_error')
         
         taskMap = {
           'hello_task':hello_task,
@@ -206,7 +209,11 @@ if __name__ == "__main__":
           
           'run_report':runPriceReport_wrapped,
           'run_report_success':hello_task,
-          'run_report_error':reportGenerate_error
+          'run_report_error':reportGenerate_error,
+          
+          'report_email':report_email_wrapped,
+          'report_email_success':hello_task,
+          'report_email_error':hello_task
         }
         #"""
         if sys.argv[0].startswith("python"):
