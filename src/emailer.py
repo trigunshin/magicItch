@@ -1,4 +1,8 @@
 import smtplib,os
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEBase import MIMEBase
+from email.MIMEText import MIMEText
+from email import Encoders
 
 def send_email(subject="Test Email", extra_body_text='',attach=None,report_file_path=None,**kwargs):
     if attach is None: attach=[]
