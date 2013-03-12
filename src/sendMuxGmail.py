@@ -1,3 +1,4 @@
+from emailer import send_report_email
 from datetime import date
 import time
 import pymongo
@@ -31,7 +32,8 @@ class Preferences(object):
                 return storeName+"Daily"+str(fileDate)+"."+dataType
         return None
 
-    def getUserArray(self):
+    def getUserArray(self, emailColl):
+        """
         #TODO turn this into more of a real test case
         usr1={self.userEmail:"t@g.c",self.prefs:{self.stores:{self.vals:[self.scg]},
                                         self.formats:{self.vals:['txt']}}}
@@ -44,16 +46,15 @@ class Preferences(object):
         usr5={self.userEmail:"a@g.c",self.prefs:{self.stores:{self.vals:[self.scg]},
                                         self.formats:{self.vals:['txt']}}}
         #return [usr1,usr2,usr3,usr4,usr5]
-        c = Connection()
-        db = c['emailList']
-        coll = db['emails']
-        ret=[]
-        for cur in coll.find({'email':{'$exists':'true'}, 
-                            'prefs.'+self.formats+'.values':{'$not':{'$size':0}},
-                            'prefs.'+self.stores+'.values':{'$not':{'$size':0}},
-                            }):
-        #for cur in coll.find({'email':"trigunshin@gmail.com"}):
-            ret.append(cur)
+        #"""
+        findQuery = {'email':{'$exists':'true'},
+            'prefs.'+self.formats+'.values':{'$not':{'$size':0}},
+            'prefs.'+self.stores+'.values':{'$not':{'$size':0}},
+        }
+        
+        ret = [cur for cur in emailColl.find(findQuery)]
+        #ret = [cur for cur in emailColl.find({'email':"trigunshin@gmail.com"})]
+        
         return ret
 
     def getPrefMap(self, usrs):
@@ -86,8 +87,8 @@ class Preferences(object):
                 ret.append(self.getReportData(store, format))
         return ret
     
-    def getEmailFileMapping(self):
-        usrs = self.getUserArray()
+    def getEmailFileMapping(self,emailColl):
+        usrs = self.getUserArray(emailColl)
         emailMap = self.getPrefMap(usrs)
         for curKey in emailMap.keys():
             emailMap[curKey][self.attachments] = self.getFileArray(curKey)
@@ -126,6 +127,32 @@ def mail(to, subject, text, attach):
     # Should be mailServer.quit(), but that crashes...
     mailServer.close()
 
+#def send_report_email(gmail_user='magic.itch@gmail.com',gmail_pwd=None,recipients=None,gmail_port=587,gmail_server_address='smtp.gmail.com',subject="test",text_body="test",attachment_paths=None,report_file_path=None,**kwargs):
+def send_mux_mail(emailColl,verbose=False,debug=False,**kwargs):
+    for cur in emailColl.find({'sender':{'$exists':'true'}}).limit(1):
+        if verbose: print "Found email handler:",cur['sender']
+        gmail_user = cur['sender']
+        gmail_pwd = cur['pass']
+    
+    p=Preferences()
+    emailMap = p.getEmailFileMapping(emailColl)
+    
+    for key in emailMap.keys():
+        files = [curFile for curFile in [directory+curFilename for curFilename in emailMap[key][p.attachments]]]
+        dest=emailMap[key][p.emailArray]
+        
+        if verbose: print "\tTo:",dest
+        if verbose: print "\tFiles:",files
+        #msg="Hey,\nLast night there was an issue with (only) Avacyn Restored data for SCG. I'm re-sending the emails as there were a couple big moves from SCG on prices. Sorry for any inconvenience."
+        msg="\nHey, these are the price changes from the last 24 hours. Let me at know at magic.itch@gmail.com if you have any questions, comments or requests."
+        msg+="\n\nDon't forget; you can set your store and format preferences on the website now."
+        subject="Hello from magicItch",str(date.today())
+        
+        send_report_email(gmail_user=gmail_user, gmail_pwd=gmail_pwd, recipients=dest, subject=subject, text_body=msg, attachment_paths=files)
+        
+        #mail(dest, subject, msg, files)
+        time.sleep(2)
+
 if __name__ == '__main__':
     #p=Preferences()
     #emailMap = p.getEmailFileMapping()
@@ -151,7 +178,7 @@ if __name__ == '__main__':
         gmail_pwd = cur['pass']
 
     p=Preferences()
-    emailMap = p.getEmailFileMapping()
+    emailMap = p.getEmailFileMapping(coll)
     for key in emailMap.keys():
         files = []
         for curFile in [directory+curFilename for curFilename in emailMap[key][p.attachments]]:
