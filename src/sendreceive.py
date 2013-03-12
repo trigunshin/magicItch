@@ -127,6 +127,8 @@ if __name__ == "__main__":
     mongoURL = os.getenv("MONGO_HOST","localhost")
     mongoPort = 27017
     dbName = "cardData"
+    #emailDBName = "emails"
+    emailCollName = "emails"
     spriteCollName = "sprites"
     cardDataCollName = "priceCollection"
     reportDataCollName = "reports"
@@ -151,13 +153,17 @@ if __name__ == "__main__":
     cardDataColl=db[cardDataCollName]
     reportDataColl=db[reportDataCollName]
     
+    emailColl = db[emailCollName]
+    
     try:
         print "AMQP Connecting to ",connection_string,"..."
         conn = Connection(connection_string)
         print "...connected."
         
         hello_wrapped = wrapCall(conn, hello_task, "hello_task_success","hello_task_error")
-        manual_email = partial(send_email, "Manual Test Email","Manual test stuffs")
+        #def send_report_email(gmail_user='magic.itch@gmail.com',recipients=None,gmail_port=587,gmail_server_address='smtp.gmail.com',subject="test",text_body="test",attachment_paths=None,**kwargs):
+        #manual_email = partial(send_report_email, "Manual Test Email","Manual test stuffs")
+        manual_email = partial(send_report_email, subject="Manual Test Email",text_body="Manual test stuffs")
         
         scgDownload = partial(outsideIn,spriteColl,fullFileDirectory=SCG_DATA_DIR,mappingFilePath=SPRITE_MAP_FILE,spriteFilePath=SPRITE_DIR,delimiter=DELIMITER,verbose=verbose_flag,debug=debug_flag)
         scgDownload = wrapCall(conn, scgDownload, 'scg_download_success','scg_download_error')
@@ -181,6 +187,10 @@ if __name__ == "__main__":
         #def send_email(subject="Test Email", extra_body_text='',attach=None,report_file_path=None,**kwargs):
         reportEmail = partial(send_email,subject="Report Generated Email",extra_body_text="Report successfully run, should be attached.",attach=None)
         report_email_wrapped = wrapCall(conn, reportEmail, 'report_email_success','report_email_error')
+        
+        #def send_report_email(gmail_user='magic.itch@gmail.com',gmail_pwd=None,recipients=None,gmail_port=587,gmail_server_address='smtp.gmail.com',subject="test",text_body="test",attachment_paths=None,report_file_path=None,**kwargs):
+        #reportEmail = partial(send_email,subject="Report Generated Email",extra_body_text="Report successfully run, should be attached.",attach=None)
+        reportEmail = partial(send_email,subject="Report Generated Email",text_body="Report successfully run, should be attached.")
         
         taskMap = {
           'hello_task':hello_task,

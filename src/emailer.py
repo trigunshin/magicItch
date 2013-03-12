@@ -4,25 +4,65 @@ from email.MIMEBase import MIMEBase
 from email.MIMEText import MIMEText
 from email import Encoders
 
-def send_email(subject="Test Email", extra_body_text='',attach=None,report_file_path=None,**kwargs):
-    if attach is None: attach=[]
-    if report_file_path is not None: attach.append(report_file_path)
-    gmail_user = "magic.itch@gmail.com"
-    gmail_pwd = os.getenv("EMAIL_PASS","")
-    FROM = 'magic.itch@gmail.com'
-    TO = ['trigunshin@gmail.com'] #must be a list
+def send_report_email(gmail_user='magic.itch@gmail.com',gmail_pwd=None,recipients=None,gmail_port=587,gmail_server_address='smtp.gmail.com',subject="test",text_body="test",attachment_paths=None,report_file_path=None,**kwargs):
+    #addrList is for sendmail's delivery, not for TO/CC/BCC display
+    if gmail_pwd is None: gmail_pwd = os.getenv("EMAIL_PASS","")
+    if addrList is None: addrList = ['trigunshin@gmail.com']
+    if attachment_paths is None: attachment_paths=[]
+    if report_file_path is not None: attach.append(report_file_path)#XXX wrap function to remove this field
+    FROM = gmail_user#FROM is displayed addr, gmail_user is gmail login
+    TO = ', '.join(addrList)#TO is displayed addrlist
     SUBJECT = subject
-    TEXT = "Testing sending mail using gmail servers\n\n" + extra_body_text
+    TEXT = text_body
     
     msg = MIMEMultipart()
-    msg['From'] = FROM#gmail_user
-    msg['To'] = ', '.join(TO)#gmail_user
+    #these are the displayed values
+    msg['From'] = FROM
+    msg['To'] = FROM
+    msg['CC'] = ""
+    msg['BCC'] = TO
     msg['Subject'] = SUBJECT
     
-    # Prepare actual message
-    messageText = """\From: %s\nTo: %s\nSubject: %s\n\n%s
-    """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
+    #text portion of email
+    msg.attach(MIMEText(TEXT)) 
     
+    #attach each file in the list
+    for cur_file in attachment_paths:
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(open(cur_file, 'rb').read())
+        Encoders.encode_base64(part)
+        part.add_header('Content-Disposition','attachment; filename="%s"' % os.path.basename(cur_file))
+        msg.attach(part)
+    
+    server = smtplib.SMTP(gmail_server_address, gmail_port) #or port 465 doesn't seem to work!
+    server.ehlo()
+    server.starttls()
+    server.login(gmail_user, gmail_pwd)
+    server.sendmail(gmail_user, [gmail_user] + addrList, msg.as_string())
+    server.close()
+    
+
+def send_email(subject="Test Email", body_text='test email',attach=None,addrList=None,report_file_path=None,**kwargs):
+    #addrList is for sendmail's delivery, not for TO/CC/BCC display
+    if addrList is None: addrList = ['trigunshin@gmail.com']
+    if attach is None: attach=[]
+    if report_file_path is not None: attach.append(report_file_path)
+    gmail_pwd = os.getenv("EMAIL_PASS","")
+    gmail_user = "magic.itch@gmail.com"
+    FROM = gmail_user#FROM is displayed addr, gmail_user is gmail login
+    TO = ', '.join(addrList)#TO is displayed addrlist
+    SUBJECT = subject
+    TEXT = body_text
+    
+    msg = MIMEMultipart()
+    #these are for display
+    msg['From'] = FROM
+    msg['To'] = FROM
+    msg['CC'] = ""
+    msg['BCC'] = TO
+    msg['Subject'] = SUBJECT
+    
+    #text portion of email
     msg.attach(MIMEText(TEXT)) 
     
     #attach each file in the list
@@ -34,14 +74,13 @@ def send_email(subject="Test Email", extra_body_text='',attach=None,report_file_
                 'attachment; filename="%s"' % os.path.basename(cur_file))
         msg.attach(part)
     
+    #send email
     #try:
     server = smtplib.SMTP("smtp.gmail.com", 587) #or port 465 doesn't seem to work!
     server.ehlo()
     server.starttls()
     server.login(gmail_user, gmail_pwd)
-    server.sendmail(FROM, ', '.join(TO), msg.as_string())
-    #server.sendmail(gmail_user, [gmail_user]+[]+TO, msg.as_string())
-    #server.quit()
+    server.sendmail(gmail_user, [gmail_user] + addrList, msg.as_string())
     server.close()
     #except Error,e:
     #    print "failed to send mail",e
