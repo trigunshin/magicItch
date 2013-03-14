@@ -147,7 +147,9 @@ def getDataDict(aDiffResult):
 def priceReport(cardDataColl,reportDataColl,startDate=None,endDate=None,outputDir=None,quantityFilterFlag=False,storeName="StarCity Games",storeShort='scg',humanFormat=True,verbose=False,debug=False,**kwargs):
     if endDate is None: endDate = date.today().strftime('%Y-%m-%d')
     if startDate is None: startDate = (date.today() - timedelta(days=1)).strftime('%Y-%m-%d')
-    filename = storeShort.replace(' ','')+startDate+"_"+endDate+".tsv"
+    if humanFormat: fileType = '.txt'
+    else: fileType = '.tsv'
+    filename = storeShort.replace(' ','')+startDate+"_"+endDate+fileType
     outputLocation = outputDir + filename
     if verbose: print "Outputting data to: ", outputLocation
     
