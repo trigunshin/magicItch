@@ -99,7 +99,7 @@ def wrapCall(conn, func, success_msg, err_msg):
     return newfunc
 
 def auto_alert_handler(processName, **varargs):
-    send_email("MagicItch Error:"+processName,'\n'.join([`k`+'||'+`v` for k,v in varargs.iteritems()]))
+    send_report_email("MagicItch Error:"+processName,'\n'.join([`k`+'||'+`v` for k,v in varargs.iteritems()]))
 
 if __name__ == "__main__":
     #daemon needs to know, for itch:
@@ -185,7 +185,7 @@ if __name__ == "__main__":
         
         #TODO tie in mailer w/reportgen, & use the rabbit_param for it
         #def send_email(subject="Test Email", extra_body_text='',attach=None,report_file_path=None,**kwargs):
-        reportEmail = partial(send_email,subject="Report Generated Email",extra_body_text="Report successfully run, should be attached.",attach=None)
+        reportEmail = partial(send_report_email,subject="Report Generated Email",extra_body_text="Report successfully run, should be attached.",attach=None)
         report_email_wrapped = wrapCall(conn, reportEmail, 'report_email_success','report_email_error')
         
         #def send_report_email(gmail_user='magic.itch@gmail.com',gmail_pwd=None,recipients=None,gmail_port=587,gmail_server_address='smtp.gmail.com',subject="test",text_body="test",attachment_paths=None,report_file_path=None,**kwargs):

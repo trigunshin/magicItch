@@ -7,11 +7,11 @@ from email import Encoders
 def send_report_email(gmail_user='magic.itch@gmail.com',gmail_pwd=None,recipients=None,gmail_port=587,gmail_server_address='smtp.gmail.com',subject="test",text_body="test",attachment_paths=None,report_file_path=None,**kwargs):
     #addrList is for sendmail's delivery, not for TO/CC/BCC display
     if gmail_pwd is None: gmail_pwd = os.getenv("EMAIL_PASS","")
-    if addrList is None: addrList = ['trigunshin@gmail.com']
+    if recipients is None: recipients = ['trigunshin@gmail.com']
     if attachment_paths is None: attachment_paths=[]
-    if report_file_path is not None: attach.append(report_file_path)#XXX wrap function to remove this field
+    if report_file_path is not None: attachment_paths.append(report_file_path)#XXX wrap function to remove this field
     FROM = gmail_user#FROM is displayed addr, gmail_user is gmail login
-    TO = ', '.join(addrList)#TO is displayed addrlist
+    TO = ', '.join(recipients)#TO is displayed addrlist
     SUBJECT = subject
     TEXT = text_body
     
@@ -38,7 +38,7 @@ def send_report_email(gmail_user='magic.itch@gmail.com',gmail_pwd=None,recipient
     server.ehlo()
     server.starttls()
     server.login(gmail_user, gmail_pwd)
-    server.sendmail(gmail_user, [gmail_user] + addrList, msg.as_string())
+    server.sendmail(gmail_user, [gmail_user] + recipients, msg.as_string())
     server.close()
     
 
